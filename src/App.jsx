@@ -63,6 +63,51 @@ const STATUS_CFG = {
   cancelada:    { label: "Cancelada",     color: "#dc2626", bg: "#fef2f2" },
 };
 
+
+// ══════════════════════════════════════════════════════════════════
+// DB API — CRUD no Supabase
+// ══════════════════════════════════════════════════════════════════
+function getToken() {
+  try { return JSON.parse(localStorage.getItem("gb_session"))?.access_token; } catch { return null; }
+}
+
+const db = {
+  async list(table, userId) {
+    const token = getToken();
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?user_id=eq.${userId}&order=created_at.desc`, {
+      headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${token}` }
+    });
+    return res.json();
+  },
+  async insert(table, data) {
+    const token = getToken();
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": SUPABASE_KEY, "Authorization": `Bearer ${token}`, "Prefer": "return=representation" },
+      body: JSON.stringify(data)
+    });
+    const r = await res.json();
+    return Array.isArray(r) ? r[0] : r;
+  },
+  async update(table, id, data) {
+    const token = getToken();
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", "apikey": SUPABASE_KEY, "Authorization": `Bearer ${token}`, "Prefer": "return=representation" },
+      body: JSON.stringify(data)
+    });
+    const r = await res.json();
+    return Array.isArray(r) ? r[0] : r;
+  },
+  async delete(table, id) {
+    const token = getToken();
+    await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
+      method: "DELETE",
+      headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${token}` }
+    });
+  },
+};
+
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -278,19 +323,36 @@ function F({ label, field, type = "text", as, opts, form, setForm }) {
 
 // ── MÓDULO OS ─────────────────────────────────────────────────────
 function ModuloOS({ cfg }) {
-  const [lista, setLista] = useState(initOS);
+  const { user } = useAuth();
+  const [lista, setLista] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState("todas");
   const [busca, setBusca] = useState("");
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
 
-  const filtered = lista.filter(o => (filtro==="todas"||o.status===filtro) && (!busca||o.cliente.toLowerCase().includes(busca.toLowerCase())||o.aparelho.toLowerCase().includes(busca.toLowerCase())||o.numero.includes(busca)));
+  useEffect(() => {
+    if (!user) return;
+    db.list("ordens_servico", user.id).then(data => {
+      setLista(Array.isArray(data) ? data : []);
+      setLoading(false);
+    });
+  }, [user]);
+
+  const filtered = lista.filter(o => (filtro==="todas"||o.status===filtro) && (!busca||o.cliente.toLowerCase().includes(busca.toLowerCase())||o.aparelho.toLowerCase().includes(busca.toLowerCase())||(o.numero||"").includes(busca)));
 
   const nova = () => { setForm({ numero:"OS-"+String(lista.length+1).padStart(4,"0"), cliente:"", telefone:"", aparelho:"", defeito:"", tecnico:cfg.tecnico||"", status:"aberta", valor:"", pagamento:"Pix", data:today(), garantia:"90 dias", obs:"" }); setModal("novo"); };
-  const salvar = () => {
+  const salvar = async () => {
     if(!form.cliente||!form.aparelho)return;
-    if(modal==="novo") setLista(p=>[...p,{...form,id:uid(),valor:Number(form.valor)||0}]);
-    else setLista(p=>p.map(o=>o.id===form.id?{...form,valor:Number(form.valor)||0}:o));
+    const payload = { ...form, valor: Number(form.valor)||0, user_id: user.id };
+    delete payload.id;
+    if(modal==="novo") {
+      const novo = await db.insert("ordens_servico", payload);
+      setLista(p=>[novo, ...p]);
+    } else {
+      const updated = await db.update("ordens_servico", form.id, payload);
+      setLista(p=>p.map(o=>o.id===form.id ? updated : o));
+    }
     setModal(null);
   };
 
@@ -335,7 +397,7 @@ function ModuloOS({ cfg }) {
                   <td><div style={{display:"flex",gap:4}}>
                     <button className="btn-i" onClick={()=>{setForm({...os});setModal("editar");}}>✏️</button>
                     <button className="btn-i" onClick={()=>gerarPDF(os,cfg)} title="Imprimir OS">🖨️</button>
-                    <button className="btn-d" onClick={()=>setLista(p=>p.filter(o=>o.id!==os.id))}>✕</button>
+                    <button className="btn-d" onClick={async()=>{await db.delete("ordens_servico",os.id);setLista(p=>p.filter(o=>o.id!==os.id));}}>✕</button>
                   </div></td>
                 </tr>
               ))}
@@ -368,20 +430,32 @@ function ModuloOS({ cfg }) {
 
 // ── MÓDULO FINANCEIRO ─────────────────────────────────────────────
 function ModuloFinanceiro() {
-  const [movs, setMovs] = useState(initMovs);
+  const { user } = useAuth();
+  const [movs, setMovs] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState("todos");
   const [busca, setBusca] = useState("");
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ tipo:"receita", categoria:"Serviço", descricao:"", valor:"", pagamento:"Pix", data:today() });
 
+  useEffect(() => {
+    if (!user) return;
+    db.list("financeiro", user.id).then(data => {
+      setMovs(Array.isArray(data) ? data : []);
+      setLoading(false);
+    });
+  }, [user]);
+
   const filtered = movs.filter(m => (filtro==="todos"||m.tipo===filtro)&&(!busca||m.descricao.toLowerCase().includes(busca.toLowerCase())));
-  const rec = movs.filter(m=>m.tipo==="receita").reduce((s,m)=>s+m.valor,0);
-  const des = movs.filter(m=>m.tipo==="despesa").reduce((s,m)=>s+m.valor,0);
+  const rec = movs.filter(m=>m.tipo==="receita").reduce((s,m)=>s+Number(m.valor),0);
+  const des = movs.filter(m=>m.tipo==="despesa").reduce((s,m)=>s+Number(m.valor),0);
   const cats = { receita:["Serviço","Venda","Outros"], despesa:["Peças","Fornecedor","Marketing","Aluguel","Outros"] };
 
-  const salvar = () => {
+  const salvar = async () => {
     if(!form.descricao||!form.valor)return;
-    setMovs(p=>[...p,{...form,id:uid(),valor:Number(form.valor)}]);
+    const payload = { ...form, valor: Number(form.valor), user_id: user.id };
+    const novo = await db.insert("financeiro", payload);
+    setMovs(p=>[novo, ...p]);
     setModal(false);
     setForm({tipo:"receita",categoria:"Serviço",descricao:"",valor:"",pagamento:"Pix",data:today()});
   };
@@ -414,7 +488,7 @@ function ModuloFinanceiro() {
                 <td style={{color:"#64748b"}}>{m.pagamento}</td>
                 <td>{m.descricao}</td>
                 <td style={{fontWeight:700,color:m.tipo==="receita"?"#16a34a":"#dc2626"}}>{m.tipo==="despesa"?"− ":"+ "}{fmt(m.valor)}</td>
-                <td><button className="btn-d" onClick={()=>setMovs(p=>p.filter(x=>x.id!==m.id))}>✕</button></td>
+                <td><button className="btn-d" onClick={async()=>{await db.delete("financeiro",m.id);setMovs(p=>p.filter(x=>x.id!==m.id));}}>✕</button></td>
               </tr>
             ))}
           </tbody>
@@ -456,15 +530,32 @@ function ModuloFinanceiro() {
 
 // ── MÓDULO CLIENTES ───────────────────────────────────────────────
 function ModuloClientes() {
-  const [clientes, setClientes] = useState(initClientes);
+  const { user } = useAuth();
+  const [clientes, setClientes] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [busca, setBusca] = useState("");
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
-  const filtered = clientes.filter(c=>!busca||c.nome.toLowerCase().includes(busca.toLowerCase())||c.telefone.includes(busca));
-  const salvar = () => {
+
+  useEffect(() => {
+    if (!user) return;
+    db.list("clientes", user.id).then(data => {
+      setClientes(Array.isArray(data) ? data : []);
+      setLoading(false);
+    });
+  }, [user]);
+
+  const filtered = clientes.filter(c=>!busca||c.nome.toLowerCase().includes(busca.toLowerCase())||(c.telefone||"").includes(busca));
+  const salvar = async () => {
     if(!form.nome)return;
-    if(modal==="novo") setClientes(p=>[...p,{...form,id:uid(),totalOS:0,ultimaOS:"—"}]);
-    else setClientes(p=>p.map(c=>c.id===form.id?form:c));
+    const payload = { nome: form.nome, telefone: form.telefone, email: form.email, cidade: form.cidade, user_id: user.id };
+    if(modal==="novo") {
+      const novo = await db.insert("clientes", payload);
+      setClientes(p=>[novo, ...p]);
+    } else {
+      const updated = await db.update("clientes", form.id, payload);
+      setClientes(p=>p.map(c=>c.id===form.id ? updated : c));
+    }
     setModal(null);
   };
   return (
@@ -484,7 +575,7 @@ function ModuloClientes() {
                 <td style={{color:"#64748b"}}>{c.cidade||"—"}</td>
                 <td><span style={{background:"#eff6ff",color:"#2563eb",borderRadius:999,padding:"2px 9px",fontWeight:700,fontSize:12}}>{c.totalOS}</span></td>
                 <td style={{color:"#64748b"}}>{c.ultimaOS}</td>
-                <td><div style={{display:"flex",gap:4}}><button className="btn-i" onClick={()=>{setForm({...c});setModal("editar");}}>✏️</button><button className="btn-d" onClick={()=>setClientes(p=>p.filter(x=>x.id!==c.id))}>✕</button></div></td>
+                <td><div style={{display:"flex",gap:4}}><button className="btn-i" onClick={()=>{setForm({...c});setModal("editar");}}>✏️</button><button className="btn-d" onClick={async()=>{await db.delete("clientes",c.id);setClientes(p=>p.filter(x=>x.id!==c.id));}}>✕</button></div></td>
               </tr>
             ))}
           </tbody>
@@ -510,16 +601,32 @@ function ModuloClientes() {
 
 // ── MÓDULO CATÁLOGO ───────────────────────────────────────────────
 function ModuloCatalogo() {
-  const [pecas, setPecas] = useState(initPecas);
+  const { user } = useAuth();
+  const [pecas, setPecas] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [busca, setBusca] = useState("");
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
-  const filtered = pecas.filter(p=>!busca||p.nome.toLowerCase().includes(busca.toLowerCase())||p.categoria.toLowerCase().includes(busca.toLowerCase()));
-  const salvar = () => {
+
+  useEffect(() => {
+    if (!user) return;
+    db.list("pecas", user.id).then(data => {
+      setPecas(Array.isArray(data) ? data : []);
+      setLoading(false);
+    });
+  }, [user]);
+
+  const filtered = pecas.filter(p=>!busca||p.nome.toLowerCase().includes(busca.toLowerCase())||(p.categoria||"").toLowerCase().includes(busca.toLowerCase()));
+  const salvar = async () => {
     if(!form.nome)return;
-    const item={...form,custo:Number(form.custo)||0,venda:Number(form.venda)||0,estoque:Number(form.estoque)||0};
-    if(modal==="novo") setPecas(p=>[...p,{...item,id:uid()}]);
-    else setPecas(p=>p.map(x=>x.id===item.id?item:x));
+    const payload = { nome: form.nome, categoria: form.categoria, custo: Number(form.custo)||0, venda: Number(form.venda)||0, estoque: Number(form.estoque)||0, user_id: user.id };
+    if(modal==="novo") {
+      const novo = await db.insert("pecas", payload);
+      setPecas(p=>[novo, ...p]);
+    } else {
+      const updated = await db.update("pecas", form.id, payload);
+      setPecas(p=>p.map(x=>x.id===form.id ? updated : x));
+    }
     setModal(null);
   };
   return (
@@ -545,7 +652,7 @@ function ModuloCatalogo() {
                   <td style={{fontWeight:700,color:"#16a34a"}}>{fmt(p.venda)}</td>
                   <td><span style={{fontWeight:700,color:m>=50?"#16a34a":m>=20?"#d97706":"#dc2626"}}>{m}%</span></td>
                   <td><span style={{fontWeight:700,color:p.estoque===0?"#dc2626":p.estoque<=2?"#d97706":"#1e293b"}}>{p.estoque===0?"⚠ Sem estoque":p.estoque+" un."}</span></td>
-                  <td><div style={{display:"flex",gap:4}}><button className="btn-i" onClick={()=>{setForm({...p});setModal("editar");}}>✏️</button><button className="btn-d" onClick={()=>setPecas(x=>x.filter(i=>i.id!==p.id))}>✕</button></div></td>
+                  <td><div style={{display:"flex",gap:4}}><button className="btn-i" onClick={()=>{setForm({...p});setModal("editar");}}>✏️</button><button className="btn-d" onClick={async()=>{await db.delete("pecas",p.id);setPecas(x=>x.filter(i=>i.id!==p.id));}}>✕</button></div></td>
                 </tr>
               );
             })}
