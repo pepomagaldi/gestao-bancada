@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — GestãoBancada</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f1f5f9; color: #1e293b; font-size: 14px; }
+  .topbar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 0 24px; height: 52px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+  .logo { font-size: 17px; font-weight: 800; } .logo span { color: #2563eb; }
+  .page { padding: 24px; max-width: 1100px; margin: 0 auto; }
+  .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .metric { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 20px; border-top: 3px solid var(--ac, #2563eb); }
+  .metric-label { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+  .metric-value { font-size: 26px; font-weight: 800; color: #1e293b; }
+  .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+  .card-hdr { padding: 13px 18px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; font-weight: 700; font-size: 14px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 9px 16px; text-align: left; font-size: 11px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; border-bottom: 1px solid #f1f5f9; }
+  td { padding: 11px 16px; border-bottom: 1px solid #f8fafc; font-size: 13px; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8fafc; }
+  .badge { display: inline-block; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 700; }
+  .badge-ok   { background: #f0fdf4; color: #16a34a; }
+  .badge-info { background: #eff6ff; color: #2563eb; }
+  .badge-warn { background: #fffbeb; color: #d97706; }
+  .badge-red  { background: #fef2f2; color: #dc2626; }
+  .btn { padding: 9px 18px; border-radius: 8px; border: none; font-size: 14px; font-weight: 700; cursor: pointer; background: #2563eb; color: #fff; font-family: inherit; }
+  .btn:hover { background: #1d4ed8; }
+  .btn-sm { padding: 5px 12px; font-size: 12px; border-radius: 6px; background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; cursor: pointer; font-family: inherit; font-weight: 600; }
+  .inp { padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 14px; font-family: inherit; outline: none; }
+  .inp:focus { border-color: #2563eb; }
+  .loader { text-align: center; padding: 32px; color: #94a3b8; font-size: 13px; }
+  .empty  { text-align: center; padding: 28px; color: #94a3b8; font-size: 13px; }
+  .tag-urgente { border-left: 3px solid #f59e0b; }
+  .refresh-info { font-size: 12px; color: #94a3b8; }
+  @media(max-width:600px){ .grid-4{grid-template-columns:1fr 1fr;} th,td{padding:8px 10px;} }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo"><span>Gestão</span>Bancada — Admin</div>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span class="refresh-info" id="last-update"></span>
+    <button class="btn" onclick="carregar()">↺ Atualizar</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="grid-4">
+    <div class="metric" style="--ac:#2563eb"><div class="metric-label">Total usuários</div><div class="metric-value" id="m-total">—</div></div>
+    <div class="metric" style="--ac:#7c3aed"><div class="metric-label">Cadastros hoje</div><div class="metric-value" id="m-hoje">—</div></div>
+    <div class="metric" style="--ac:#d97706"><div class="metric-label">Trials ativos</div><div class="metric-value" id="m-trials">—</div></div>
+    <div class="metric" style="--ac:#16a34a"><div class="metric-label">Assinantes</div><div class="metric-value" id="m-assinantes">—</div></div>
+    <div class="metric" style="--ac:#dc2626"><div class="metric-label">Expirados</div><div class="metric-value" id="m-expirados">—</div></div>
+    <div class="metric" style="--ac:#f59e0b"><div class="metric-label">Vencendo (3d)</div><div class="metric-value" id="m-urgente">—</div></div>
+  </div>
+
+  <!-- URGENTES -->
+  <div class="card" style="border-color:#fde68a">
+    <div class="card-hdr">
+      <span>⚠️ Trials vencendo em 3 dias — follow-up agora</span>
+      <span class="badge badge-warn" id="badge-urgente">0</span>
+    </div>
+    <div id="tbl-urgente"><div class="loader">Carregando...</div></div>
+  </div>
+
+  <!-- TODOS -->
+  <div class="card">
+    <div class="card-hdr">
+      <span>Todos os usuários</span>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <input class="inp" id="busca" placeholder="Buscar nome ou e-mail..." style="width:200px;" oninput="filtrar()" />
+        <select class="inp" id="filtro-status" style="width:140px;" onchange="filtrar()">
+          <option value="">Todos status</option>
+          <option value="assinante">Assinante</option>
+          <option value="trial">Trial ativo</option>
+          <option value="expirado">Expirado</option>
+        </select>
+      </div>
+    </div>
+    <div style="overflow-x:auto" id="tbl-usuarios"><div class="loader">Carregando...</div></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://dtectoxgobrupwrfttgd.supabase.co";
+const SUPABASE_SVC = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0ZWN0b3hnb2JydXB3cmZ0dGdkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDU2MjgzNCwiZXhwIjoyMDkwMTM4ODM0fQ.uAbqbe8iAtyCpNeCrJJyZlLMN5ppBcd33YCrSSyOhrI";
+
+let todosUsuarios = [];
+
+async function carregar() {
+  document.getElementById('tbl-urgente').innerHTML = '<div class="loader">Carregando...</div>';
+  document.getElementById('tbl-usuarios').innerHTML = '<div class="loader">Carregando...</div>';
+
+  try {
+    const [usersRes, profilesRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=1000`, {
+        headers: { "apikey": SUPABASE_SVC, "Authorization": `Bearer ${SUPABASE_SVC}` }
+      }),
+      fetch(`${SUPABASE_URL}/rest/v1/profiles?select=*&order=created_at.desc`, {
+        headers: { "apikey": SUPABASE_SVC, "Authorization": `Bearer ${SUPABASE_SVC}` }
+      })
+    ]);
+
+    const usersData = await usersRes.json();
+    const profiles  = await profilesRes.json();
+    const users = usersData.users || [];
+
+    const profileMap = {};
+    (Array.isArray(profiles) ? profiles : []).forEach(p => { profileMap[p.id] = p; });
+
+    const agora = new Date();
+    const hoje  = agora.toISOString().slice(0, 10);
+
+    todosUsuarios = users.map(u => {
+      const p = profileMap[u.id] || {};
+      const trialExp = p.trial_expires_at ? new Date(p.trial_expires_at) : null;
+      const diasTrial = trialExp ? Math.ceil((trialExp - agora) / 86400000) : null;
+      let status = 'expirado';
+      if (p.assinante) status = 'assinante';
+      else if (trialExp && trialExp > agora) status = 'trial';
+      return {
+        id: u.id, email: u.email || '—',
+        nome: p.nome || u.user_metadata?.nome || '—',
+        assinante: p.assinante || false,
+        trialExp, diasTrial, status,
+        criadoEm: u.created_at,
+      };
+    });
+
+    const hoje_count  = users.filter(u => (u.created_at||'').slice(0,10) === hoje).length;
+    const trials      = todosUsuarios.filter(u => u.status === 'trial').length;
+    const assinantes  = todosUsuarios.filter(u => u.status === 'assinante').length;
+    const expirados   = todosUsuarios.filter(u => u.status === 'expirado').length;
+    const urgentes    = todosUsuarios.filter(u => u.status === 'trial' && u.diasTrial !== null && u.diasTrial <= 3);
+
+    document.getElementById('m-total').textContent     = todosUsuarios.length;
+    document.getElementById('m-hoje').textContent      = hoje_count;
+    document.getElementById('m-trials').textContent    = trials;
+    document.getElementById('m-assinantes').textContent= assinantes;
+    document.getElementById('m-expirados').textContent = expirados;
+    document.getElementById('m-urgente').textContent   = urgentes.length;
+    document.getElementById('badge-urgente').textContent = urgentes.length;
+    document.getElementById('last-update').textContent = 'Atualizado ' + new Date().toLocaleTimeString('pt-BR');
+
+    renderUrgentes(urgentes);
+    renderUsuarios(todosUsuarios);
+  } catch(e) {
+    document.getElementById('tbl-urgente').innerHTML = `<div class="loader" style="color:#dc2626">Erro: ${e.message}</div>`;
+    document.getElementById('tbl-usuarios').innerHTML = '';
+  }
+}
+
+function diasBadge(dias) {
+  if (dias === null || dias === undefined) return '—';
+  const cls = dias <= 1 ? 'badge-red' : dias <= 3 ? 'badge-warn' : 'badge-info';
+  return `<span class="badge ${cls}">${dias}d</span>`;
+}
+
+function statusBadge(s) {
+  if (s === 'assinante') return '<span class="badge badge-ok">Assinante</span>';
+  if (s === 'trial')     return '<span class="badge badge-info">Trial</span>';
+  return '<span class="badge badge-red">Expirado</span>';
+}
+
+function fmtData(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('pt-BR');
+}
+
+function whatsappLink(email) {
+  return `https://wa.me/?text=${encodeURIComponent(`Oi! Notei que seu trial do GestãoBancada está vencendo. Posso te ajudar com alguma dúvida? gestao-bancada.vercel.app`)}`;
+}
+
+function renderUrgentes(lista) {
+  if (!lista.length) {
+    document.getElementById('tbl-urgente').innerHTML = '<div class="empty">Nenhum trial vencendo nos próximos 3 dias ✓</div>';
+    return;
+  }
+  const rows = [...lista].sort((a,b) => a.diasTrial - b.diasTrial).map(u => `
+    <tr class="tag-urgente">
+      <td style="font-weight:700">${u.nome}</td>
+      <td style="color:#64748b">${u.email}</td>
+      <td>${diasBadge(u.diasTrial)}</td>
+      <td style="color:#64748b">${fmtData(u.trialExp)}</td>
+      <td style="color:#64748b">${fmtData(u.criadoEm)}</td>
+      <td><a href="${whatsappLink(u.email)}" target="_blank"><button class="btn-sm">WhatsApp</button></a></td>
+    </tr>`).join('');
+  document.getElementById('tbl-urgente').innerHTML = `
+    <table>
+      <thead><tr><th>Nome</th><th>E-mail</th><th>Dias restantes</th><th>Vence em</th><th>Cadastro</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function filtrar() {
+  const q  = document.getElementById('busca').value.toLowerCase();
+  const st = document.getElementById('filtro-status').value;
+  const filtrado = todosUsuarios.filter(u => {
+    const matchQ  = !q  || u.email.toLowerCase().includes(q) || u.nome.toLowerCase().includes(q);
+    const matchSt = !st || u.status === st;
+    return matchQ && matchSt;
+  });
+  renderUsuarios(filtrado);
+}
+
+function renderUsuarios(lista) {
+  if (!lista.length) {
+    document.getElementById('tbl-usuarios').innerHTML = '<div class="empty">Nenhum usuário encontrado</div>';
+    return;
+  }
+  const rows = lista.map(u => `
+    <tr>
+      <td style="font-weight:700">${u.nome}</td>
+      <td style="color:#64748b">${u.email}</td>
+      <td>${statusBadge(u.status)}</td>
+      <td>${u.status === 'trial' ? diasBadge(u.diasTrial) : '—'}</td>
+      <td style="color:#64748b">${fmtData(u.criadoEm)}</td>
+    </tr>`).join('');
+  document.getElementById('tbl-usuarios').innerHTML = `
+    <table>
+      <thead><tr><th>Nome</th><th>E-mail</th><th>Status</th><th>Trial restante</th><th>Cadastro</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+carregar();
+</script>
+</body>
+</html>

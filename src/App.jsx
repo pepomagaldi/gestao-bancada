@@ -1,6 +1,23 @@
 import './App.css'
 import { useState, useEffect, createContext, useContext } from "react";
 
+// ── META PIXEL ────────────────────────────────────────────────────
+(function() {
+  if (typeof window === 'undefined') return;
+  const f = window; const b = document; const e = 'script';
+  const v = 'https://connect.facebook.net/en_US/fbevents.js';
+  if (f.fbq) return;
+  const n = f.fbq = function() { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
+  if (!f._fbq) f._fbq = n;
+  n.push = n; n.loaded = true; n.version = '2.0'; n.queue = [];
+  const t = b.createElement(e); t.async = true; t.src = v;
+  const s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s);
+  window.fbq('init', '1496783104686899');
+  window.fbq('track', 'PageView');
+})();
+
+
+
 const SUPABASE_URL = "https://dtectoxgobrupwrfttgd.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0ZWN0b3hnb2JydXB3cmZ0dGdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NjI4MzQsImV4cCI6MjA5MDEzODgzNH0.xd3CMtRYJvxZ_MnVK4lv4b1-V2o-I_Yyo1XH-VAuAKA";
 const SUPABASE_SVC = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0ZWN0b3hnb2JydXB3cmZ0dGdkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDU2MjgzNCwiZXhwIjoyMDkwMTM4ODM0fQ.uAbqbe8iAtyCpNeCrJJyZlLMN5ppBcd33YCrSSyOhrI";
@@ -781,7 +798,7 @@ function Register({ onSwitch }) {
   const submit = async () => {
     setErro(""); if(!nome||!email||!senha||!conf){setErro("Preencha todos os campos.");return;}
     if(senha!==conf){setErro("As senhas não coincidem.");return;} if(senha.length<6){setErro("Senha deve ter ao menos 6 caracteres.");return;}
-    setLoading(true); try{await signUp(email,senha,nome);setOk(true);}catch(e){setErro(e.message.includes("already registered")?"E-mail já cadastrado.":e.message);} setLoading(false);
+    setLoading(true); try{await signUp(email,senha,nome); if(window.fbq) window.fbq('track','CompleteRegistration'); setOk(true);}catch(e){setErro(e.message.includes("already registered")?"E-mail já cadastrado.":e.message);} setLoading(false);
   };
   if(ok) return (
     <div className="auth-wrap"><div className="auth-card" style={{textAlign:"center"}}>
