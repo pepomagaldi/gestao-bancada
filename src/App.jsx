@@ -71,7 +71,6 @@ function getAccessStatus(profile) {
 
 const fmt = (v) => "R$ " + Number(v).toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 const today = () => new Date().toISOString().slice(0, 10);
-let _uid = 300; const uid = () => ++_uid;
 
 const STATUS_CFG = {
   aberta:       { label: "Aberta",        color: "#2563eb", bg: "#eff6ff" },
@@ -215,7 +214,27 @@ const CSS = `
   .kanban-card{background:#1a2236;border:1px solid #2d3748;border-radius:8px;padding:10px 12px;cursor:grab;user-select:none;transition:opacity 0.15s,box-shadow 0.15s;}
   .kanban-card:active{cursor:grabbing;}
   .kanban-card.dragging{opacity:0.4;}
-  @media(max-width:640px){.nav-tab{padding:0 10px;font-size:12px;}.page{padding:14px 16px;}.frow-2,.frow-3{grid-template-columns:1fr;}.auth-card{padding:24px 18px;}}
+  .dash-panels{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .kanban-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .kanban-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:start;}
+  .produtos-top{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}
+  @media(max-width:640px){
+    .nav-tab-label{display:none;}
+    .nav-tab{padding:0 10px;font-size:17px;}
+    .nav-logo{font-size:14px;margin-right:12px;}
+    .page{padding:14px 14px;}
+    .frow-2,.frow-3{grid-template-columns:1fr;}
+    .auth-card{padding:24px 18px;}
+    .modal{border-radius:12px 12px 0 0;position:fixed;bottom:0;left:0;right:0;max-width:100%;max-height:92vh;margin:0;}
+    .modal-bg{align-items:flex-end;padding:0;}
+    .modal-hdr,.modal-ftr{padding:14px 16px;}
+    .modal-body{padding:14px 16px;}
+    .stat-grid{grid-template-columns:1fr 1fr;}
+    .dash-panels{grid-template-columns:1fr!important;}
+    .kanban-grid{grid-template-columns:repeat(4,minmax(220px,1fr))!important;}
+    .produtos-top{grid-template-columns:1fr!important;}
+    .trial-bar{margin:8px 14px 0;}
+  }
   @media print{.no-print{display:none!important;}}
 `;
 
@@ -304,21 +323,6 @@ function gerarPDF(os, cfg) {
   setTimeout(() => win.print(), 400);
 }
 
-// ── DADOS MOCK ────────────────────────────────────────────────────
-const initOS = [
-  { id:1, numero:"OS-0001", cliente:"João Silva",  telefone:"54999991234", aparelho:"iPhone 13",    defeito:"Display quebrado",   tecnico:"Pedro", status:"concluida",    valor:320, pagamento:"Pix",      data:"2026-04-01", garantia:"90 dias", obs:"" },
-  { id:2, numero:"OS-0002", cliente:"Maria Souza", telefone:"54988885678", aparelho:"Samsung A54",  defeito:"Não carrega",        tecnico:"Pedro", status:"em_andamento", valor:150, pagamento:"Dinheiro", data:"2026-04-01", garantia:"90 dias", obs:"" },
-  { id:3, numero:"OS-0003", cliente:"Pedro Alves", telefone:"54977779012", aparelho:"Motorola G73", defeito:"Câmera travada",     tecnico:"Pedro", status:"aberta",       valor:200, pagamento:"Pix",      data:"2026-04-01", garantia:"90 dias", obs:"" },
-];
-const initMovs = [
-  { id:1, tipo:"receita", categoria:"Serviço", descricao:"Serviço OS OS-0001 — João Silva",   valor:320, pagamento:"Pix",      data:"2026-04-01" },
-  { id:2, tipo:"despesa", categoria:"Peças",   descricao:"Compra peças RL Distribuidora",     valor:185, pagamento:"Débito",   data:"2026-04-01" },
-  { id:3, tipo:"receita", categoria:"Serviço", descricao:"Serviço OS OS-0002 — Maria Souza",  valor:150, pagamento:"Dinheiro", data:"2026-04-01" },
-];
-const initClientes = [
-  { id:1, nome:"João Silva",  telefone:"54999991234", email:"joao@gmail.com",  cidade:"Vacaria", totalOS:3, ultimaOS:"2026-04-01" },
-  { id:2, nome:"Maria Souza", telefone:"54988885678", email:"maria@gmail.com", cidade:"Vacaria", totalOS:1, ultimaOS:"2026-04-01" },
-];
 const initCfg = { nome:"Minha Assistência Técnica", cnpj:"", telefone:"", email:"", endereco:"", cidade:"", cep:"", tecnico:"", garantia:"A empresa garante o serviço realizado pelo prazo de 90 (noventa) dias contados da data de entrega ao cliente." };
 
 
@@ -743,39 +747,68 @@ function ModuloConfig({ cfg, setCfg }) {
 
 // ── DASHBOARD ─────────────────────────────────────────────────────
 function Dashboard() {
-  const rec = initMovs.filter(m=>m.tipo==="receita").reduce((s,m)=>s+m.valor,0);
-  const des = initMovs.filter(m=>m.tipo==="despesa").reduce((s,m)=>s+m.valor,0);
+  const { user } = useAuth();
+  const [os, setOs] = useState([]);
+  const [movs, setMovs] = useState([]);
+  const [clientes, setClientes] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    Promise.all([
+      db.list("ordens_servico", user.id),
+      db.list("financeiro", user.id),
+      db.list("clientes", user.id),
+    ]).then(([o, m, c]) => {
+      setOs(Array.isArray(o) ? o : []);
+      setMovs(Array.isArray(m) ? m : []);
+      setClientes(Array.isArray(c) ? c : []);
+      setLoading(false);
+    });
+  }, [user]);
+
+  if (loading) return (
+    <div className="page" style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:300}}>
+      <span className="spinner" style={{width:28,height:28,borderWidth:3}}/>
+    </div>
+  );
+
+  const rec = movs.filter(m=>m.tipo==="receita").reduce((s,m)=>s+Number(m.valor),0);
+  const des = movs.filter(m=>m.tipo==="despesa").reduce((s,m)=>s+Number(m.valor),0);
+  const osAtivas = os.filter(o=>o.status!=="concluida"&&o.status!=="cancelada");
+
   return (
     <div className="page">
       <div className="page-hdr"><div className="page-title">Dashboard</div></div>
       <div className="stat-grid">
-        <StatCard label="OS Abertas"     value={initOS.filter(o=>o.status==="aberta").length}       accent="#1A6BFF"/>
-        <StatCard label="Em Andamento"   value={initOS.filter(o=>o.status==="em_andamento").length}  accent="#d97706"/>
-        <StatCard label="Receita (mês)"  value={fmt(rec)}   accent="#16a34a"/>
-        <StatCard label="Despesas (mês)" value={fmt(des)}   accent="#dc2626"/>
+        <StatCard label="OS Abertas"     value={os.filter(o=>o.status==="aberta").length}      accent="#1A6BFF"/>
+        <StatCard label="Em Andamento"   value={os.filter(o=>o.status==="em_andamento").length} accent="#d97706"/>
+        <StatCard label="Receita (mês)"  value={fmt(rec)}                                       accent="#16a34a"/>
+        <StatCard label="Despesas (mês)" value={fmt(des)}                                       accent="#dc2626"/>
         <StatCard label="Lucro (mês)"    value={fmt(rec-des)} accent={rec-des>=0?"#16a34a":"#dc2626"}/>
-        <StatCard label="Clientes"       value={initClientes.length} accent="#7c3aed"/>
+        <StatCard label="Clientes"       value={clientes.length}                                accent="#7c3aed"/>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+      <div className="dash-panels">
         <div className="card" style={{overflow:"hidden"}}>
           <div style={{padding:"13px 16px",borderBottom:"1px solid #1e2738",fontWeight:800,fontSize:14}}>OS Abertas & Em Andamento</div>
-          {initOS.filter(o=>o.status!=="concluida"&&o.status!=="cancelada").map(os=>(
-            <div key={os.id} style={{padding:"10px 16px",borderBottom:"1px solid #0d1117",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-              <div><div style={{fontWeight:700}}>{os.cliente}</div><div style={{fontSize:12,color:"#94a3b8"}}>{os.aparelho} · <span className="os-num">{os.numero}</span></div></div>
-              <StatusTag status={os.status}/>
+          {osAtivas.map(o=>(
+            <div key={o.id} style={{padding:"10px 16px",borderBottom:"1px solid #0d1117",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div><div style={{fontWeight:700}}>{o.cliente}</div><div style={{fontSize:12,color:"#94a3b8"}}>{o.aparelho} · <span className="os-num">{o.numero}</span></div></div>
+              <StatusTag status={o.status}/>
             </div>
           ))}
-          {initOS.filter(o=>o.status!=="concluida"&&o.status!=="cancelada").length===0&&<div style={{padding:20,textAlign:"center",color:"#94a3b8",fontSize:13}}>Nenhuma OS aberta ✓</div>}
+          {osAtivas.length===0&&<div style={{padding:20,textAlign:"center",color:"#94a3b8",fontSize:13}}>Nenhuma OS aberta ✓</div>}
         </div>
         <div className="card" style={{overflow:"hidden"}}>
           <div style={{padding:"13px 16px",borderBottom:"1px solid #1e2738",fontWeight:800,fontSize:14}}>Últimos Lançamentos</div>
-          {[...initMovs].reverse().slice(0,5).map(m=>(
+          {movs.slice(0,5).map(m=>(
             <div key={m.id} style={{padding:"10px 16px",borderBottom:"1px solid #0d1117",display:"flex",alignItems:"center",gap:10}}>
               <span style={{fontSize:16}}>{m.tipo==="receita"?"↑":"↓"}</span>
               <div style={{flex:1}}><div style={{fontSize:13}}>{m.descricao}</div><div style={{fontSize:11,color:"#94a3b8"}}>{m.data}</div></div>
               <span style={{fontWeight:800,color:m.tipo==="receita"?"#4ade80":"#f87171"}}>{m.tipo==="despesa"?"− ":"+ "}{fmt(m.valor)}</span>
             </div>
           ))}
+          {movs.length===0&&<div style={{padding:20,textAlign:"center",color:"#94a3b8",fontSize:13}}>Nenhum lançamento registrado</div>}
         </div>
       </div>
     </div>
@@ -816,7 +849,7 @@ function ModuloAgenda() {
   return (
     <div className="page">
       <div className="page-hdr"><div className="page-title">Agenda Kanban</div></div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,alignItems:"start"}}>
+      <div className="kanban-wrap"><div className="kanban-grid">
         {KANBAN_COLS.map(col => {
           const cards = lista.filter(o => o.status === col.key);
           return (
@@ -851,7 +884,7 @@ function ModuloAgenda() {
             </div>
           );
         })}
-      </div>
+      </div></div>
     </div>
   );
 }
@@ -947,7 +980,7 @@ function ModuloProdutos() {
       <div className="page-hdr"><div className="page-title">Produtos & Caixa</div></div>
 
       {/* Duas colunas no topo */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:18}}>
+      <div className="produtos-top">
 
         {/* Esquerda: Estoque */}
         <div className="card" style={{overflow:"hidden"}}>
@@ -1244,7 +1277,7 @@ function AppMain({ accessStatus }) {
         <div className="nav-inner">
           <div className="nav-logo">Core<span>Ops</span></div>
           {MENU.map(m=>(
-            <button key={m.key} className={`nav-tab${page===m.key?" active":""}`} onClick={()=>setPage(m.key)}>{m.icon} {m.label}</button>
+            <button key={m.key} className={`nav-tab${page===m.key?" active":""}`} onClick={()=>setPage(m.key)}>{m.icon}<span className="nav-tab-label"> {m.label}</span></button>
           ))}
           <div className="nav-right">
             {isTrial&&<span style={{fontSize:12,fontWeight:700,color:accessStatus.diasRestantes<=2?"#f87171":"#fbbf24",background:accessStatus.diasRestantes<=2?"#2d1515":"#1a1a0d",border:`1px solid ${accessStatus.diasRestantes<=2?"#3d1515":"#fde68a44"}`,borderRadius:999,padding:"3px 10px"}}>⏳ {accessStatus.diasRestantes}d</span>}
