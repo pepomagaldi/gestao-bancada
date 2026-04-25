@@ -40,7 +40,7 @@ const authAPI = {
     if (r.error) throw new Error(r.error.message);
     const userId = r.user?.id || r.id;
     if (userId) {
-      const trialExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      const trialExpires = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
       await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "apikey": SUPABASE_SVC, "Authorization": `Bearer ${SUPABASE_SVC}`, "Prefer": "return=representation" },
@@ -69,14 +69,14 @@ function getAccessStatus(profile) {
   return "expired";
 }
 
-const fmt = (v) => "R$\u00a0" + Number(v).toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+const fmt = (v) => "R$ " + Number(v).toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 const today = () => new Date().toISOString().slice(0, 10);
 let _uid = 300; const uid = () => ++_uid;
 
 const STATUS_CFG = {
   aberta:       { label: "Aberta",        color: "#2563eb", bg: "#eff6ff" },
   em_andamento: { label: "Em Andamento",  color: "#d97706", bg: "#fffbeb" },
-  concluida:    { label: "Conclu\u00edda", color: "#16a34a", bg: "#f0fdf4" },
+  concluida:    { label: "Concluída", color: "#16a34a", bg: "#f0fdf4" },
   cancelada:    { label: "Cancelada",     color: "#dc2626", bg: "#fef2f2" },
 };
 
@@ -129,86 +129,87 @@ const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;}
-  body{background:#f1f5f9;color:#1e293b;font-family:'Nunito',sans-serif;font-size:14px;}
-  ::-webkit-scrollbar{width:6px;height:6px;}::-webkit-scrollbar-track{background:#f1f5f9;}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px;}
-  input,select,textarea{background:#fff;border:1px solid #e2e8f0;border-radius:8px;color:#1e293b;padding:8px 12px;font-family:'Nunito',sans-serif;font-size:14px;width:100%;outline:none;transition:border-color 0.2s;}
-  input:focus,select:focus,textarea:focus{border-color:#2563eb;box-shadow:0 0 0 3px #2563eb18;}
+  body{background:#0a0e1a;color:#e2e8f0;font-family:'Nunito',sans-serif;font-size:14px;}
+  ::-webkit-scrollbar{width:6px;height:6px;}::-webkit-scrollbar-track{background:#0d1117;}::-webkit-scrollbar-thumb{background:#2d3748;border-radius:3px;}
+  input,select,textarea{background:#1a2236;border:1px solid #2d3748;border-radius:8px;color:#e2e8f0;padding:8px 12px;font-family:'Nunito',sans-serif;font-size:14px;width:100%;outline:none;transition:border-color 0.2s;}
+  input:focus,select:focus,textarea:focus{border-color:#1A6BFF;box-shadow:0 0 0 3px #1A6BFF18;}
   input::placeholder,textarea::placeholder{color:#94a3b8;}
+  select option{background:#1a2236;color:#e2e8f0;}
   button{font-family:'Nunito',sans-serif;cursor:pointer;}
-  label{font-size:11px;color:#64748b;display:block;margin-bottom:4px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;}
-  .btn-p{background:#2563eb;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:14px;font-weight:700;display:inline-flex;align-items:center;gap:6px;transition:background 0.15s;}
-  .btn-p:hover{background:#1d4ed8;}
-  .btn-s{background:#fff;color:#374151;border:1px solid #e2e8f0;border-radius:8px;padding:8px 16px;font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:all 0.15s;}
-  .btn-s:hover{border-color:#2563eb;color:#2563eb;}
-  .btn-d{background:#fff;color:#dc2626;border:1px solid #fecaca;border-radius:6px;padding:5px 9px;font-size:13px;transition:background 0.15s;}
-  .btn-d:hover{background:#fef2f2;}
-  .btn-i{background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:5px 9px;font-size:13px;color:#64748b;transition:all 0.15s;}
-  .btn-i:hover{border-color:#2563eb;color:#2563eb;}
+  label{font-size:11px;color:#94a3b8;display:block;margin-bottom:4px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;}
+  .btn-p{background:#1A6BFF;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:14px;font-weight:700;display:inline-flex;align-items:center;gap:6px;transition:background 0.15s;}
+  .btn-p:hover{background:#155ee0;}
+  .btn-s{background:#1a2236;color:#e2e8f0;border:1px solid #2d3748;border-radius:8px;padding:8px 16px;font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:all 0.15s;}
+  .btn-s:hover{border-color:#1A6BFF;color:#1A6BFF;}
+  .btn-d{background:#1a2236;color:#f87171;border:1px solid #3d1515;border-radius:6px;padding:5px 9px;font-size:13px;transition:background 0.15s;}
+  .btn-d:hover{background:#2d1515;}
+  .btn-i{background:#1a2236;border:1px solid #2d3748;border-radius:6px;padding:5px 9px;font-size:13px;color:#94a3b8;transition:all 0.15s;}
+  .btn-i:hover{border-color:#1A6BFF;color:#1A6BFF;}
   .btn-g{background:#16a34a;color:#fff;border:none;border-radius:8px;padding:12px;font-size:15px;font-weight:700;width:100%;transition:background 0.15s;}
   .btn-g:hover{background:#15803d;}
-  .btn-gh{background:transparent;color:#2563eb;border:1px solid #bfdbfe;border-radius:8px;padding:11px;font-size:14px;font-weight:600;width:100%;transition:all 0.15s;}
-  .btn-gh:hover{background:#eff6ff;}
-  .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;}
-  .modal-bg{position:fixed;inset:0;background:#00000066;z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;}
-  .modal{background:#fff;border-radius:16px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px #00000022;}
-  .modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid #f1f5f9;}
-  .modal-hdr h2{font-size:17px;font-weight:800;}
+  .btn-gh{background:transparent;color:#1A6BFF;border:1px solid #1A6BFF44;border-radius:8px;padding:11px;font-size:14px;font-weight:600;width:100%;transition:all 0.15s;}
+  .btn-gh:hover{background:#1A6BFF11;}
+  .card{background:#111827;border:1px solid #1e2738;border-radius:12px;}
+  .modal-bg{position:fixed;inset:0;background:#00000099;z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .modal{background:#111827;border:1px solid #1e2738;border-radius:16px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px #00000066;}
+  .modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid #1e2738;}
+  .modal-hdr h2{font-size:17px;font-weight:800;color:#e2e8f0;}
   .modal-body{padding:20px 24px;}
-  .modal-ftr{padding:16px 24px;border-top:1px solid #f1f5f9;display:flex;gap:10px;justify-content:flex-end;}
+  .modal-ftr{padding:16px 24px;border-top:1px solid #1e2738;display:flex;gap:10px;justify-content:flex-end;}
   .tag{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700;}
   .tag::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;}
-  .nav-top{background:#fff;border-bottom:1px solid #e2e8f0;position:sticky;top:0;z-index:100;}
+  .nav-top{background:#0d1117;border-bottom:1px solid #1e2738;position:sticky;top:0;z-index:100;}
   .nav-inner{display:flex;align-items:center;padding:0 20px;height:54px;gap:0;overflow-x:auto;}
-  .nav-logo{font-size:17px;font-weight:800;color:#1e293b;margin-right:24px;white-space:nowrap;flex-shrink:0;}
-  .nav-logo span{color:#2563eb;}
-  .nav-tab{padding:0 14px;height:54px;display:flex;align-items:center;gap:5px;font-size:13px;font-weight:700;color:#64748b;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;transition:all 0.15s;flex-shrink:0;}
-  .nav-tab:hover{color:#2563eb;}
-  .nav-tab.active{color:#2563eb;border-bottom-color:#2563eb;}
+  .nav-logo{font-size:17px;font-weight:800;color:#e2e8f0;margin-right:24px;white-space:nowrap;flex-shrink:0;}
+  .nav-logo span{color:#1A6BFF;}
+  .nav-tab{padding:0 14px;height:54px;display:flex;align-items:center;gap:5px;font-size:13px;font-weight:700;color:#94a3b8;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;transition:all 0.15s;flex-shrink:0;}
+  .nav-tab:hover{color:#1A6BFF;}
+  .nav-tab.active{color:#1A6BFF;border-bottom-color:#1A6BFF;}
   .nav-right{margin-left:auto;display:flex;align-items:center;gap:10px;flex-shrink:0;}
-  .avatar{width:30px;height:30px;border-radius:50%;background:#eff6ff;color:#2563eb;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;}
+  .avatar{width:30px;height:30px;border-radius:50%;background:#1a2236;color:#1A6BFF;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;}
   .page{padding:20px 24px;max-width:1200px;margin:0 auto;}
   .page-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
-  .page-title{font-size:13px;font-weight:800;color:#64748b;letter-spacing:0.07em;text-transform:uppercase;}
+  .page-title{font-size:13px;font-weight:800;color:#94a3b8;letter-spacing:0.07em;text-transform:uppercase;}
   .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;}
-  .stat-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 18px;border-top:3px solid var(--ac,#2563eb);}
+  .stat-card{background:#111827;border:1px solid #1e2738;border-radius:10px;padding:14px 18px;border-top:3px solid var(--ac,#1A6BFF);}
   .stat-label{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px;}
-  .stat-val{font-size:22px;font-weight:800;color:#1e293b;}
+  .stat-val{font-size:22px;font-weight:800;color:#e2e8f0;}
   table{width:100%;border-collapse:collapse;}
-  thead tr{border-bottom:1px solid #f1f5f9;}
+  thead tr{border-bottom:1px solid #1e2738;}
   thead th{padding:9px 14px;text-align:left;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;}
-  tbody tr{border-bottom:1px solid #f8fafc;transition:background 0.1s;}
+  tbody tr{border-bottom:1px solid #0d1117;transition:background 0.1s;}
   tbody tr:last-child{border-bottom:none;}
-  tbody tr:hover{background:#f8fafc;}
-  tbody td{padding:11px 14px;font-size:13px;color:#374151;}
+  tbody tr:hover{background:#1a2236;}
+  tbody td{padding:11px 14px;font-size:13px;color:#e2e8f0;}
   .ftabs{display:flex;gap:4px;margin-bottom:14px;flex-wrap:wrap;}
-  .ftab{padding:5px 12px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid #e2e8f0;background:#fff;color:#64748b;cursor:pointer;transition:all 0.15s;}
-  .ftab.active{background:#2563eb;color:#fff;border-color:#2563eb;}
-  .ftab:hover:not(.active){border-color:#2563eb;color:#2563eb;}
+  .ftab{padding:5px 12px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid #2d3748;background:#1a2236;color:#94a3b8;cursor:pointer;transition:all 0.15s;}
+  .ftab.active{background:#1A6BFF;color:#fff;border-color:#1A6BFF;}
+  .ftab:hover:not(.active){border-color:#1A6BFF;color:#1A6BFF;}
   .sbar{position:relative;margin-bottom:14px;}
   .sbar input{padding-left:34px;}
-  .sbar::before{content:'\uD83D\uDD0D';position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px;}
+  .sbar::before{content:'🔍';position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px;}
   .frow{display:grid;gap:12px;}
   .frow-2{grid-template-columns:1fr 1fr;}
   .frow-3{grid-template-columns:1fr 1fr 1fr;}
   .field{margin-bottom:12px;}
-  .os-num{color:#2563eb;font-weight:800;font-size:12px;}
-  .auth-wrap{min-height:100vh;background:#f1f5f9;display:flex;align-items:center;justify-content:center;padding:24px;}
-  .auth-card{background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:36px 32px;width:100%;max-width:400px;box-shadow:0 4px 24px #0000000e;}
+  .os-num{color:#1A6BFF;font-weight:800;font-size:12px;}
+  .auth-wrap{min-height:100vh;background:#0a0e1a;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .auth-card{background:#111827;border:1px solid #1e2738;border-radius:20px;padding:36px 32px;width:100%;max-width:400px;box-shadow:0 4px 24px #00000044;}
   .auth-logo{text-align:center;margin-bottom:24px;}
-  .auth-logo-t{font-size:26px;font-weight:800;}
-  .auth-logo-t span{color:#2563eb;}
+  .auth-logo-t{font-size:26px;font-weight:800;color:#e2e8f0;}
+  .auth-logo-t span{color:#1A6BFF;}
   .auth-logo-s{font-size:11px;color:#94a3b8;margin-top:2px;letter-spacing:0.08em;text-transform:uppercase;}
-  .auth-err{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;border-radius:8px;padding:9px 13px;font-size:13px;margin-bottom:14px;}
-  .auth-ok{background:#f0fdf4;border:1px solid #bbf7d0;color:#16a34a;border-radius:8px;padding:9px 13px;font-size:13px;margin-bottom:14px;}
-  .auth-lnk{color:#2563eb;background:none;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:'Nunito',sans-serif;}
+  .auth-err{background:#2d1515;border:1px solid #3d1515;color:#f87171;border-radius:8px;padding:9px 13px;font-size:13px;margin-bottom:14px;}
+  .auth-ok{background:#0d2d1a;border:1px solid #16a34a44;color:#4ade80;border-radius:8px;padding:9px 13px;font-size:13px;margin-bottom:14px;}
+  .auth-lnk{color:#1A6BFF;background:none;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:'Nunito',sans-serif;}
   .auth-lnk:hover{text-decoration:underline;}
   .eye-btn{position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#94a3b8;font-size:14px;}
   @keyframes spin{to{transform:rotate(360deg);}}
-  .spinner{width:15px;height:15px;border:2px solid #ffffff55;border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block;}
-  .trial-bar{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:9px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 24px 0;flex-wrap:wrap;}
-  .trial-bar.urgent{background:#fef2f2;border-color:#fecaca;}
-  .pw-wrap{min-height:100vh;background:#f1f5f9;display:flex;align-items:center;justify-content:center;padding:24px;}
-  .pw-card{background:#fff;border:2px solid #22c55e;border-radius:20px;padding:36px;width:100%;max-width:420px;text-align:center;box-shadow:0 8px 32px #22c55e15;}
+  .spinner{width:15px;height:15px;border:2px solid #ffffff33;border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block;}
+  .trial-bar{background:#1a1a0d;border:1px solid #fde68a44;border-radius:10px;padding:9px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 24px 0;flex-wrap:wrap;}
+  .trial-bar.urgent{background:#1a0d0d;border-color:#fecaca44;}
+  .pw-wrap{min-height:100vh;background:#0a0e1a;display:flex;align-items:center;justify-content:center;padding:24px;}
+  .pw-card{background:#111827;border:2px solid #22c55e;border-radius:20px;padding:36px;width:100%;max-width:420px;text-align:center;box-shadow:0 8px 32px #22c55e15;}
   @media(max-width:640px){.nav-tab{padding:0 10px;font-size:12px;}.page{padding:14px 16px;}.frow-2,.frow-3{grid-template-columns:1fr;}.auth-card{padding:24px 18px;}}
   @media print{.no-print{display:none!important;}}
 `;
@@ -262,7 +263,7 @@ function StatusTag({ status }) {
   return <span className="tag" style={{ background: c.bg, color: c.color }}>{c.label}</span>;
 }
 
-function StatCard({ label, value, accent = "#2563eb" }) {
+function StatCard({ label, value, accent = "#1A6BFF" }) {
   return <div className="stat-card" style={{ "--ac": accent }}><div className="stat-label">{label}</div><div className="stat-val">{value}</div></div>;
 }
 
@@ -271,14 +272,14 @@ function gerarPDF(os, cfg) {
   const win = window.open("", "_blank");
   win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${os.numero}</title><style>
     *{box-sizing:border-box;margin:0;padding:0;}body{font-family:Arial,sans-serif;font-size:13px;color:#1e293b;padding:28px;}
-    .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #2563eb;padding-bottom:14px;margin-bottom:18px;}
-    .emp-nome{font-size:20px;font-weight:800;color:#2563eb;}.emp-info{font-size:11px;color:#64748b;margin-top:3px;line-height:1.6;}
-    .os-box{background:#eff6ff;border:2px solid #2563eb;border-radius:8px;padding:8px 14px;text-align:center;}
-    .os-n{font-size:18px;font-weight:800;color:#2563eb;}.os-d{font-size:11px;color:#64748b;}
+    .hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1A6BFF;padding-bottom:14px;margin-bottom:18px;}
+    .emp-nome{font-size:20px;font-weight:800;color:#1A6BFF;}.emp-info{font-size:11px;color:#64748b;margin-top:3px;line-height:1.6;}
+    .os-box{background:#eff6ff;border:2px solid #1A6BFF;border-radius:8px;padding:8px 14px;text-align:center;}
+    .os-n{font-size:18px;font-weight:800;color:#1A6BFF;}.os-d{font-size:11px;color:#64748b;}
     .sec{margin-bottom:14px;}.sec-t{font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px;border-bottom:1px solid #f1f5f9;padding-bottom:3px;}
     .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}.fl{font-size:11px;color:#64748b;margin-bottom:2px;}.fv{font-weight:700;}
     .vbox{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;}
-    .vn{font-size:22px;font-weight:800;color:#2563eb;}.ass{margin-top:36px;display:grid;grid-template-columns:1fr 1fr;gap:36px;}
+    .vn{font-size:22px;font-weight:800;color:#1A6BFF;}.ass{margin-top:36px;display:grid;grid-template-columns:1fr 1fr;gap:36px;}
     .ass-l{border-top:1px solid #1e293b;padding-top:5px;text-align:center;font-size:11px;color:#64748b;margin-top:36px;}
     .gar{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:9px 12px;font-size:11px;color:#64748b;line-height:1.6;margin-top:10px;}
     .obs{background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:9px 12px;font-size:12px;margin-top:8px;}
@@ -381,7 +382,7 @@ function ModuloOS({ cfg }) {
     <div className="page">
       <div className="page-hdr"><div className="page-title">Ordens de Serviço</div><button className="btn-p" onClick={nova}>+ Nova OS</button></div>
       <div className="stat-grid">
-        <StatCard label="Abertas"       value={counts("aberta")}       accent="#2563eb"/>
+        <StatCard label="Abertas"       value={counts("aberta")}       accent="#1A6BFF"/>
         <StatCard label="Em Andamento"  value={counts("em_andamento")} accent="#d97706"/>
         <StatCard label="Concluídas"    value={counts("concluida")}    accent="#16a34a"/>
         <StatCard label="Canceladas"    value={counts("cancelada")}    accent="#dc2626"/>
@@ -403,14 +404,14 @@ function ModuloOS({ cfg }) {
               {filtered.map(os=>(
                 <tr key={os.id}>
                   <td><span className="os-num">{os.numero}</span></td>
-                  <td style={{color:"#64748b"}}>{os.data}</td>
+                  <td style={{color:"#94a3b8"}}>{os.data}</td>
                   <td style={{fontWeight:700}}>{os.cliente}</td>
                   <td style={{color:"#94a3b8",fontSize:12}}>{os.telefone||"—"}</td>
                   <td>{os.aparelho}</td>
-                  <td style={{color:"#64748b",maxWidth:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{os.defeito}</td>
+                  <td style={{color:"#94a3b8",maxWidth:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{os.defeito}</td>
                   <td>{os.tecnico}</td>
                   <td><StatusTag status={os.status}/></td>
-                  <td style={{fontWeight:700,color:"#16a34a"}}>{fmt(os.valor)}</td>
+                  <td style={{fontWeight:700,color:"#4ade80"}}>{fmt(os.valor)}</td>
                   <td><div style={{display:"flex",gap:4}}>
                     <button className="btn-i" onClick={()=>{setForm({...os});setModal("editar");}}>✏️</button>
                     <button className="btn-i" onClick={()=>gerarPDF(os,cfg)} title="Imprimir OS">🖨️</button>
@@ -499,12 +500,12 @@ function ModuloFinanceiro() {
           <tbody>
             {[...filtered].reverse().map(m=>(
               <tr key={m.id}>
-                <td style={{color:"#64748b"}}>{m.data}</td>
-                <td><span className="tag" style={{background:m.tipo==="receita"?"#f0fdf4":"#fef2f2",color:m.tipo==="receita"?"#16a34a":"#dc2626"}}>{m.tipo==="receita"?"Receita":"Despesa"}</span></td>
-                <td style={{color:"#64748b"}}>{m.categoria}</td>
-                <td style={{color:"#64748b"}}>{m.pagamento}</td>
+                <td style={{color:"#94a3b8"}}>{m.data}</td>
+                <td><span className="tag" style={{background:m.tipo==="receita"?"#0d2d1a":"#2d1515",color:m.tipo==="receita"?"#4ade80":"#f87171"}}>{m.tipo==="receita"?"Receita":"Despesa"}</span></td>
+                <td style={{color:"#94a3b8"}}>{m.categoria}</td>
+                <td style={{color:"#94a3b8"}}>{m.pagamento}</td>
                 <td>{m.descricao}</td>
-                <td style={{fontWeight:700,color:m.tipo==="receita"?"#16a34a":"#dc2626"}}>{m.tipo==="despesa"?"− ":"+ "}{fmt(m.valor)}</td>
+                <td style={{fontWeight:700,color:m.tipo==="receita"?"#4ade80":"#f87171"}}>{m.tipo==="despesa"?"− ":"+ "}{fmt(m.valor)}</td>
                 <td><button className="btn-d" onClick={async()=>{await db.delete("financeiro",m.id);setMovs(p=>p.filter(x=>x.id!==m.id));}}>✕</button></td>
               </tr>
             ))}
@@ -520,9 +521,9 @@ function ModuloFinanceiro() {
                 {["receita","despesa"].map(t=>(
                   <button key={t} onClick={()=>setForm(p=>({...p,tipo:t,categoria:t==="receita"?"Serviço":"Peças"}))}
                     style={{flex:1,padding:"9px",border:"1px solid",borderRadius:8,fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"Nunito",transition:"all 0.15s",
-                      borderColor:form.tipo===t?(t==="receita"?"#16a34a":"#dc2626"):"#e2e8f0",
-                      background:form.tipo===t?(t==="receita"?"#f0fdf4":"#fef2f2"):"#fff",
-                      color:form.tipo===t?(t==="receita"?"#16a34a":"#dc2626"):"#64748b"}}>
+                      borderColor:form.tipo===t?(t==="receita"?"#16a34a":"#dc2626"):"#2d3748",
+                      background:form.tipo===t?(t==="receita"?"#0d2d1a":"#2d1515"):"#1a2236",
+                      color:form.tipo===t?(t==="receita"?"#4ade80":"#f87171"):"#94a3b8"}}>
                     {t==="receita"?"↑ Receita":"↓ Despesa"}
                   </button>
                 ))}
@@ -588,10 +589,10 @@ function ModuloClientes() {
               <tr key={c.id}>
                 <td style={{fontWeight:700}}>{c.nome}</td>
                 <td>{c.telefone}</td>
-                <td style={{color:"#64748b"}}>{c.email||"—"}</td>
-                <td style={{color:"#64748b"}}>{c.cidade||"—"}</td>
-                <td><span style={{background:"#eff6ff",color:"#2563eb",borderRadius:999,padding:"2px 9px",fontWeight:700,fontSize:12}}>{c.totalOS}</span></td>
-                <td style={{color:"#64748b"}}>{c.ultimaOS}</td>
+                <td style={{color:"#94a3b8"}}>{c.email||"—"}</td>
+                <td style={{color:"#94a3b8"}}>{c.cidade||"—"}</td>
+                <td><span style={{background:"#1a2236",color:"#1A6BFF",borderRadius:999,padding:"2px 9px",fontWeight:700,fontSize:12}}>{c.totalOS}</span></td>
+                <td style={{color:"#94a3b8"}}>{c.ultimaOS}</td>
                 <td><div style={{display:"flex",gap:4}}><button className="btn-i" onClick={()=>{setForm({...c});setModal("editar");}}>✏️</button><button className="btn-d" onClick={async()=>{await db.delete("clientes",c.id);setClientes(p=>p.filter(x=>x.id!==c.id));}}>✕</button></div></td>
               </tr>
             ))}
@@ -664,11 +665,11 @@ function ModuloCatalogo() {
               return (
                 <tr key={p.id}>
                   <td style={{fontWeight:700}}>{p.nome}</td>
-                  <td><span style={{background:"#eff6ff",color:"#2563eb",borderRadius:999,padding:"2px 9px",fontSize:12,fontWeight:700}}>{p.categoria}</span></td>
-                  <td style={{color:"#64748b"}}>{fmt(p.custo)}</td>
-                  <td style={{fontWeight:700,color:"#16a34a"}}>{fmt(p.venda)}</td>
-                  <td><span style={{fontWeight:700,color:m>=50?"#16a34a":m>=20?"#d97706":"#dc2626"}}>{m}%</span></td>
-                  <td><span style={{fontWeight:700,color:p.estoque===0?"#dc2626":p.estoque<=2?"#d97706":"#1e293b"}}>{p.estoque===0?"⚠ Sem estoque":p.estoque+" un."}</span></td>
+                  <td><span style={{background:"#1a2236",color:"#1A6BFF",borderRadius:999,padding:"2px 9px",fontSize:12,fontWeight:700}}>{p.categoria}</span></td>
+                  <td style={{color:"#94a3b8"}}>{fmt(p.custo)}</td>
+                  <td style={{fontWeight:700,color:"#4ade80"}}>{fmt(p.venda)}</td>
+                  <td><span style={{fontWeight:700,color:m>=50?"#4ade80":m>=20?"#d97706":"#f87171"}}>{m}%</span></td>
+                  <td><span style={{fontWeight:700,color:p.estoque===0?"#f87171":p.estoque<=2?"#d97706":"#e2e8f0"}}>{p.estoque===0?"⚠ Sem estoque":p.estoque+" un."}</span></td>
                   <td><div style={{display:"flex",gap:4}}><button className="btn-i" onClick={()=>{setForm({...p});setModal("editar");}}>✏️</button><button className="btn-d" onClick={async()=>{await db.delete("pecas",p.id);setPecas(x=>x.filter(i=>i.id!==p.id));}}>✕</button></div></td>
                 </tr>
               );
@@ -705,18 +706,18 @@ function ModuloConfig({ cfg, setCfg }) {
     <div className="page">
       <div className="page-hdr"><div className="page-title">Configurações da Empresa</div><button className="btn-p" onClick={salvar}>{saved?"✓ Salvo!":"Salvar Configurações"}</button></div>
       <div className="card" style={{padding:22,marginBottom:14}}>
-        <div style={{fontWeight:800,fontSize:13,marginBottom:14,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.06em"}}>Identidade Visual</div>
+        <div style={{fontWeight:800,fontSize:13,marginBottom:14,color:"#94a3b8",textTransform:"uppercase",letterSpacing:"0.06em"}}>Identidade Visual</div>
         <div className="frow frow-2"><F label="Nome da Empresa" field="nome" form={form} setForm={setForm}/><F label="Técnico Padrão" field="tecnico" form={form} setForm={setForm}/></div>
       </div>
       <div className="card" style={{padding:22,marginBottom:14}}>
-        <div style={{fontWeight:800,fontSize:13,marginBottom:14,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.06em"}}>Dados Fiscais e Contato</div>
+        <div style={{fontWeight:800,fontSize:13,marginBottom:14,color:"#94a3b8",textTransform:"uppercase",letterSpacing:"0.06em"}}>Dados Fiscais e Contato</div>
         <div className="frow frow-2"><F label="CNPJ" field="cnpj" form={form} setForm={setForm}/><F label="Telefone" field="telefone" form={form} setForm={setForm}/></div>
         <div className="frow frow-2"><F label="E-mail" field="email" form={form} setForm={setForm}/><F label="CEP" field="cep" form={form} setForm={setForm}/></div>
         <F label="Endereço Completo" field="endereco" form={form} setForm={setForm}/>
         <div className="frow frow-2"><F label="Cidade / Estado" field="cidade" form={form} setForm={setForm}/><div/></div>
       </div>
       <div className="card" style={{padding:22}}>
-        <div style={{fontWeight:800,fontSize:13,marginBottom:4,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.06em"}}>Termos de Garantia (aparece no PDF)</div>
+        <div style={{fontWeight:800,fontSize:13,marginBottom:4,color:"#94a3b8",textTransform:"uppercase",letterSpacing:"0.06em"}}>Termos de Garantia (aparece no PDF)</div>
         <p style={{fontSize:12,color:"#94a3b8",marginBottom:10}}>Este texto aparece no rodapé da OS impressa.</p>
         <F label="" field="garantia" as="textarea" form={form} setForm={setForm}/>
       </div>
@@ -732,7 +733,7 @@ function Dashboard() {
     <div className="page">
       <div className="page-hdr"><div className="page-title">Dashboard</div></div>
       <div className="stat-grid">
-        <StatCard label="OS Abertas"     value={initOS.filter(o=>o.status==="aberta").length}       accent="#2563eb"/>
+        <StatCard label="OS Abertas"     value={initOS.filter(o=>o.status==="aberta").length}       accent="#1A6BFF"/>
         <StatCard label="Em Andamento"   value={initOS.filter(o=>o.status==="em_andamento").length}  accent="#d97706"/>
         <StatCard label="Receita (mês)"  value={fmt(rec)}   accent="#16a34a"/>
         <StatCard label="Despesas (mês)" value={fmt(des)}   accent="#dc2626"/>
@@ -741,9 +742,9 @@ function Dashboard() {
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
         <div className="card" style={{overflow:"hidden"}}>
-          <div style={{padding:"13px 16px",borderBottom:"1px solid #f1f5f9",fontWeight:800,fontSize:14}}>OS Abertas & Em Andamento</div>
+          <div style={{padding:"13px 16px",borderBottom:"1px solid #1e2738",fontWeight:800,fontSize:14}}>OS Abertas & Em Andamento</div>
           {initOS.filter(o=>o.status!=="concluida"&&o.status!=="cancelada").map(os=>(
-            <div key={os.id} style={{padding:"10px 16px",borderBottom:"1px solid #f8fafc",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div key={os.id} style={{padding:"10px 16px",borderBottom:"1px solid #0d1117",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
               <div><div style={{fontWeight:700}}>{os.cliente}</div><div style={{fontSize:12,color:"#94a3b8"}}>{os.aparelho} · <span className="os-num">{os.numero}</span></div></div>
               <StatusTag status={os.status}/>
             </div>
@@ -751,12 +752,12 @@ function Dashboard() {
           {initOS.filter(o=>o.status!=="concluida"&&o.status!=="cancelada").length===0&&<div style={{padding:20,textAlign:"center",color:"#94a3b8",fontSize:13}}>Nenhuma OS aberta ✓</div>}
         </div>
         <div className="card" style={{overflow:"hidden"}}>
-          <div style={{padding:"13px 16px",borderBottom:"1px solid #f1f5f9",fontWeight:800,fontSize:14}}>Últimos Lançamentos</div>
+          <div style={{padding:"13px 16px",borderBottom:"1px solid #1e2738",fontWeight:800,fontSize:14}}>Últimos Lançamentos</div>
           {[...initMovs].reverse().slice(0,5).map(m=>(
-            <div key={m.id} style={{padding:"10px 16px",borderBottom:"1px solid #f8fafc",display:"flex",alignItems:"center",gap:10}}>
+            <div key={m.id} style={{padding:"10px 16px",borderBottom:"1px solid #0d1117",display:"flex",alignItems:"center",gap:10}}>
               <span style={{fontSize:16}}>{m.tipo==="receita"?"↑":"↓"}</span>
               <div style={{flex:1}}><div style={{fontSize:13}}>{m.descricao}</div><div style={{fontSize:11,color:"#94a3b8"}}>{m.data}</div></div>
-              <span style={{fontWeight:800,color:m.tipo==="receita"?"#16a34a":"#dc2626"}}>{m.tipo==="despesa"?"− ":"+ "}{fmt(m.valor)}</span>
+              <span style={{fontWeight:800,color:m.tipo==="receita"?"#4ade80":"#f87171"}}>{m.tipo==="despesa"?"− ":"+ "}{fmt(m.valor)}</span>
             </div>
           ))}
         </div>
@@ -776,9 +777,9 @@ function Login({ onSwitch }) {
   };
   return (
     <div className="auth-wrap"><div className="auth-card">
-      <div className="auth-logo"><div className="auth-logo-t"><span>Gestão</span>Bancada</div><div className="auth-logo-s">Assistência Técnica</div></div>
+      <div className="auth-logo"><div className="auth-logo-t">Core<span>Ops</span></div><div className="auth-logo-s">Assistência Técnica</div></div>
       <div style={{fontSize:20,fontWeight:800,marginBottom:3}}>Entrar</div>
-      <div style={{color:"#64748b",fontSize:13,marginBottom:20}}>Acesse sua conta.</div>
+      <div style={{color:"#94a3b8",fontSize:13,marginBottom:20}}>Acesse sua conta.</div>
       {erro&&<div className="auth-err">{erro}</div>}
       <div className="field"><label>E-mail</label><input type="email" placeholder="voce@email.com" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()}/></div>
       <div className="field"><label>Senha</label><div style={{position:"relative"}}><input type={show?"text":"password"} placeholder="••••••••" value={senha} onChange={e=>setSenha(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} style={{paddingRight:38}}/><button className="eye-btn" onClick={()=>setShow(p=>!p)}>{show?"🙈":"👁️"}</button></div></div>
@@ -786,7 +787,7 @@ function Login({ onSwitch }) {
       <button className="btn-p" style={{width:"100%",justifyContent:"center",padding:"11px"}} onClick={submit} disabled={loading}>
         {loading?<span style={{display:"flex",alignItems:"center",gap:8}}><span className="spinner"/>Entrando…</span>:"Entrar"}
       </button>
-      <p style={{textAlign:"center",marginTop:18,fontSize:13,color:"#64748b"}}>Não tem conta? <button className="auth-lnk" onClick={()=>onSwitch("register")}>Criar conta grátis</button></p>
+      <p style={{textAlign:"center",marginTop:18,fontSize:13,color:"#94a3b8"}}>Não tem conta? <button className="auth-lnk" onClick={()=>onSwitch("register")}>Criar conta grátis</button></p>
     </div></div>
   );
 }
@@ -804,15 +805,15 @@ function Register({ onSwitch }) {
     <div className="auth-wrap"><div className="auth-card" style={{textAlign:"center"}}>
       <div style={{fontSize:44,marginBottom:12}}>🎉</div>
       <div style={{fontSize:20,fontWeight:800,marginBottom:8}}>Conta criada!</div>
-      <p style={{color:"#64748b",fontSize:13,marginBottom:22}}>Faça login para começar seus 7 dias grátis.</p>
+      <p style={{color:"#94a3b8",fontSize:13,marginBottom:22}}>Faça login para começar seus 3 dias grátis.</p>
       <button className="btn-p" style={{width:"100%",justifyContent:"center",padding:"11px"}} onClick={()=>onSwitch("login")}>Ir para o login →</button>
     </div></div>
   );
   return (
     <div className="auth-wrap"><div className="auth-card">
-      <div className="auth-logo"><div className="auth-logo-t"><span>Gestão</span>Bancada</div></div>
+      <div className="auth-logo"><div className="auth-logo-t">Core<span>Ops</span></div></div>
       <div style={{fontSize:20,fontWeight:800,marginBottom:3}}>Criar conta grátis</div>
-      <div className="auth-ok" style={{fontSize:12}}>✅ 7 dias grátis · Sem cartão · R$37/mês depois</div>
+      <div className="auth-ok" style={{fontSize:12}}>✅ 3 dias grátis · Sem cartão · R$37/mês depois</div>
       {erro&&<div className="auth-err">{erro}</div>}
       <div className="field"><label>Nome da Assistência</label><input placeholder="Ex: TechFix Vacaria" value={nome} onChange={e=>setNome(e.target.value)}/></div>
       <div className="field"><label>E-mail</label><input type="email" placeholder="voce@email.com" value={email} onChange={e=>setEmail(e.target.value)}/></div>
@@ -821,7 +822,7 @@ function Register({ onSwitch }) {
       <button className="btn-p" style={{width:"100%",justifyContent:"center",padding:"11px",marginTop:4}} onClick={submit} disabled={loading}>
         {loading?<span style={{display:"flex",alignItems:"center",gap:8}}><span className="spinner"/>Criando…</span>:"Criar conta →"}
       </button>
-      <p style={{textAlign:"center",marginTop:16,fontSize:13,color:"#64748b"}}>Já tem conta? <button className="auth-lnk" onClick={()=>onSwitch("login")}>Entrar</button></p>
+      <p style={{textAlign:"center",marginTop:16,fontSize:13,color:"#94a3b8"}}>Já tem conta? <button className="auth-lnk" onClick={()=>onSwitch("login")}>Entrar</button></p>
     </div></div>
   );
 }
@@ -832,10 +833,10 @@ function Recover({ onSwitch }) {
   const submit = async () => { if(!email){setErro("Digite seu e-mail.");return;} setLoading(true); try{await resetPassword(email);setOk(true);}catch(e){setErro(e.message);} setLoading(false); };
   return (
     <div className="auth-wrap"><div className="auth-card">
-      <div className="auth-logo"><div className="auth-logo-t"><span>Gestão</span>Bancada</div></div>
+      <div className="auth-logo"><div className="auth-logo-t">Core<span>Ops</span></div></div>
       {!ok?<>
         <div style={{fontSize:20,fontWeight:800,marginBottom:3}}>Recuperar senha</div>
-        <div style={{color:"#64748b",fontSize:13,marginBottom:18}}>Enviaremos um link para redefinir.</div>
+        <div style={{color:"#94a3b8",fontSize:13,marginBottom:18}}>Enviaremos um link para redefinir.</div>
         {erro&&<div className="auth-err">{erro}</div>}
         <div className="field"><label>E-mail</label><input type="email" placeholder="voce@email.com" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()}/></div>
         <button className="btn-p" style={{width:"100%",justifyContent:"center",padding:"11px"}} onClick={submit} disabled={loading}>
@@ -844,9 +845,9 @@ function Recover({ onSwitch }) {
       </>:<div style={{textAlign:"center"}}>
         <div style={{fontSize:42,marginBottom:12}}>✉️</div>
         <div style={{fontSize:18,fontWeight:800,marginBottom:8}}>Link enviado!</div>
-        <p style={{color:"#64748b",fontSize:13}}>Verifique sua caixa de entrada.</p>
+        <p style={{color:"#94a3b8",fontSize:13}}>Verifique sua caixa de entrada.</p>
       </div>}
-      <p style={{textAlign:"center",marginTop:20,fontSize:13,color:"#64748b"}}><button className="auth-lnk" onClick={()=>onSwitch("login")}>← Voltar ao login</button></p>
+      <p style={{textAlign:"center",marginTop:20,fontSize:13,color:"#94a3b8"}}><button className="auth-lnk" onClick={()=>onSwitch("login")}>← Voltar ao login</button></p>
     </div></div>
   );
 }
@@ -857,19 +858,19 @@ function Paywall({ onSignOut, onRefresh }) {
   const nome = profile?.nome || user?.email;
   return (
     <div className="pw-wrap"><div style={{width:"100%",maxWidth:420}}>
-      <div style={{textAlign:"center",marginBottom:20}}><div style={{fontSize:20,fontWeight:800}}><span style={{color:"#2563eb"}}>Gestão</span>Bancada</div></div>
+      <div style={{textAlign:"center",marginBottom:20}}><div style={{fontSize:20,fontWeight:800,color:"#e2e8f0"}}>Core<span style={{color:"#1A6BFF"}}>Ops</span></div></div>
       <div className="pw-card">
         <div style={{fontSize:42,marginBottom:10}}>🔒</div>
         <div style={{fontSize:20,fontWeight:800,marginBottom:6}}>Trial encerrado</div>
-        <p style={{color:"#64748b",fontSize:13,marginBottom:22,lineHeight:1.6}}>Seus 7 dias gratuitos acabaram, <strong style={{color:"#1e293b"}}>{nome}</strong>.<br/>Assine para continuar.</p>
-        <div style={{background:"#f8fafc",border:"1px solid #e2e8f0",borderRadius:10,padding:"14px 18px",marginBottom:18,textAlign:"left"}}>
+        <p style={{color:"#94a3b8",fontSize:13,marginBottom:22,lineHeight:1.6}}>Seus 3 dias gratuitos acabaram, <strong style={{color:"#e2e8f0"}}>{nome}</strong>.<br/>Assine para continuar.</p>
+        <div style={{background:"#1a2236",border:"1px solid #2d3748",borderRadius:10,padding:"14px 18px",marginBottom:18,textAlign:"left"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-            <div><div style={{fontWeight:800,fontSize:14}}>Plano GestãoBancada</div><div style={{color:"#64748b",fontSize:12}}>Cancele quando quiser</div></div>
-            <div style={{textAlign:"right"}}><div style={{fontSize:24,fontWeight:800,color:"#16a34a"}}>R$37</div><div style={{color:"#94a3b8",fontSize:11}}>/mês</div></div>
+            <div><div style={{fontWeight:800,fontSize:14}}>Plano CoreOps</div><div style={{color:"#94a3b8",fontSize:12}}>Cancele quando quiser</div></div>
+            <div style={{textAlign:"right"}}><div style={{fontSize:24,fontWeight:800,color:"#4ade80"}}>R$37</div><div style={{color:"#94a3b8",fontSize:11}}>/mês</div></div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
             {["OS ilimitadas","Controle de caixa","Catálogo de peças","Suporte WhatsApp"].map(i=>(
-              <div key={i} style={{fontSize:12,color:"#374151",display:"flex",alignItems:"center",gap:5}}><span style={{color:"#16a34a",fontWeight:700}}>✓</span>{i}</div>
+              <div key={i} style={{fontSize:12,color:"#e2e8f0",display:"flex",alignItems:"center",gap:5}}><span style={{color:"#4ade80",fontWeight:700}}>✓</span>{i}</div>
             ))}
           </div>
         </div>
@@ -903,12 +904,12 @@ function AppMain({ accessStatus }) {
     <>
       <nav className="nav-top no-print">
         <div className="nav-inner">
-          <div className="nav-logo"><span>Gestão</span>Bancada</div>
+          <div className="nav-logo">Core<span>Ops</span></div>
           {MENU.map(m=>(
             <button key={m.key} className={`nav-tab${page===m.key?" active":""}`} onClick={()=>setPage(m.key)}>{m.icon} {m.label}</button>
           ))}
           <div className="nav-right">
-            {isTrial&&<span style={{fontSize:12,fontWeight:700,color:accessStatus.diasRestantes<=2?"#dc2626":"#92400e",background:accessStatus.diasRestantes<=2?"#fef2f2":"#fffbeb",border:`1px solid ${accessStatus.diasRestantes<=2?"#fecaca":"#fde68a"}`,borderRadius:999,padding:"3px 10px"}}>⏳ {accessStatus.diasRestantes}d</span>}
+            {isTrial&&<span style={{fontSize:12,fontWeight:700,color:accessStatus.diasRestantes<=2?"#f87171":"#fbbf24",background:accessStatus.diasRestantes<=2?"#2d1515":"#1a1a0d",border:`1px solid ${accessStatus.diasRestantes<=2?"#3d1515":"#fde68a44"}`,borderRadius:999,padding:"3px 10px"}}>⏳ {accessStatus.diasRestantes}d</span>}
             <div className="avatar">{(nome||"U")[0].toUpperCase()}</div>
             <button className="btn-s" style={{padding:"5px 12px",fontSize:13}} onClick={signOut}>Sair</button>
           </div>
@@ -916,7 +917,7 @@ function AppMain({ accessStatus }) {
       </nav>
       {isTrial&&(
         <div className={`trial-bar no-print${accessStatus.diasRestantes<=2?" urgent":""}`}>
-          <span style={{fontSize:13,fontWeight:700,color:accessStatus.diasRestantes<=2?"#dc2626":"#92400e"}}>
+          <span style={{fontSize:13,fontWeight:700,color:accessStatus.diasRestantes<=2?"#f87171":"#fbbf24"}}>
             {accessStatus.diasRestantes<=2?"⚠️":"⏳"} {accessStatus.diasRestantes} {accessStatus.diasRestantes===1?"dia":"dias"} restantes no trial.
           </span>
           <a href={CAKTO_LINK} target="_blank" rel="noreferrer" style={{background:"#16a34a",color:"#fff",borderRadius:8,padding:"6px 14px",fontSize:13,fontWeight:700,textDecoration:"none"}}>Assinar R$37/mês</a>
