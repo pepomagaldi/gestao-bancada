@@ -69,14 +69,14 @@ function getAccessStatus(profile) {
   return "expired";
 }
 
-const fmt = (v) => "R$ " + Number(v).toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+const fmt = (v) => "R$ " + Number(v).toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 const today = () => new Date().toISOString().slice(0, 10);
 let _uid = 300; const uid = () => ++_uid;
 
 const STATUS_CFG = {
   aberta:       { label: "Aberta",        color: "#2563eb", bg: "#eff6ff" },
   em_andamento: { label: "Em Andamento",  color: "#d97706", bg: "#fffbeb" },
-  concluida:    { label: "Concluída", color: "#16a34a", bg: "#f0fdf4" },
+  concluida:    { label: "Concluída",     color: "#16a34a", bg: "#f0fdf4" },
   cancelada:    { label: "Cancelada",     color: "#dc2626", bg: "#fef2f2" },
 };
 
@@ -167,7 +167,7 @@ const CSS = `
   .nav-tab.active{color:#1A6BFF;border-bottom-color:#1A6BFF;}
   .nav-right{margin-left:auto;display:flex;align-items:center;gap:10px;flex-shrink:0;}
   .avatar{width:30px;height:30px;border-radius:50%;background:#1a2236;color:#1A6BFF;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;}
-  .page{padding:20px 24px;max-width:1200px;margin:0 auto;}
+  .page{padding:20px 24px;max-width:1400px;margin:0 auto;}
   .page-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
   .page-title{font-size:13px;font-weight:800;color:#94a3b8;letter-spacing:0.07em;text-transform:uppercase;}
   .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;}
@@ -210,6 +210,11 @@ const CSS = `
   .trial-bar.urgent{background:#1a0d0d;border-color:#fecaca44;}
   .pw-wrap{min-height:100vh;background:#0a0e1a;display:flex;align-items:center;justify-content:center;padding:24px;}
   .pw-card{background:#111827;border:2px solid #22c55e;border-radius:20px;padding:36px;width:100%;max-width:420px;text-align:center;box-shadow:0 8px 32px #22c55e15;}
+  .kanban-col{background:#111827;border:1px solid #1e2738;border-radius:12px;overflow:hidden;min-height:300px;display:flex;flex-direction:column;}
+  .kanban-col.drag-over{border-color:#1A6BFF;background:#111827ee;}
+  .kanban-card{background:#1a2236;border:1px solid #2d3748;border-radius:8px;padding:10px 12px;cursor:grab;user-select:none;transition:opacity 0.15s,box-shadow 0.15s;}
+  .kanban-card:active{cursor:grabbing;}
+  .kanban-card.dragging{opacity:0.4;}
   @media(max-width:640px){.nav-tab{padding:0 10px;font-size:12px;}.page{padding:14px 16px;}.frow-2,.frow-3{grid-template-columns:1fr;}.auth-card{padding:24px 18px;}}
   @media print{.no-print{display:none!important;}}
 `;
@@ -314,12 +319,6 @@ const initClientes = [
   { id:1, nome:"João Silva",  telefone:"54999991234", email:"joao@gmail.com",  cidade:"Vacaria", totalOS:3, ultimaOS:"2026-04-01" },
   { id:2, nome:"Maria Souza", telefone:"54988885678", email:"maria@gmail.com", cidade:"Vacaria", totalOS:1, ultimaOS:"2026-04-01" },
 ];
-const initPecas = [
-  { id:1, nome:"Display iPhone 13",          categoria:"Display",   custo:180, venda:290, estoque:3 },
-  { id:2, nome:"Bateria iPhone 12 Pro",       categoria:"Bateria",   custo:120, venda:200, estoque:2 },
-  { id:3, nome:"Conector carga Motorola G73", categoria:"Conector",  custo:25,  venda:55,  estoque:8 },
-  { id:4, nome:"Película 9H universal",       categoria:"Acessório", custo:3,   venda:15,  estoque:0 },
-];
 const initCfg = { nome:"Minha Assistência Técnica", cnpj:"", telefone:"", email:"", endereco:"", cidade:"", cep:"", tecnico:"", garantia:"A empresa garante o serviço realizado pelo prazo de 90 (noventa) dias contados da data de entrega ao cliente." };
 
 
@@ -348,6 +347,7 @@ function ModuloOS({ cfg }) {
   const [busca, setBusca] = useState("");
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
+  const [prevStatus, setPrevStatus] = useState(null);
 
   useEffect(() => {
     if (!user) return;
@@ -359,7 +359,24 @@ function ModuloOS({ cfg }) {
 
   const filtered = lista.filter(o => (filtro==="todas"||o.status===filtro) && (!busca||o.cliente.toLowerCase().includes(busca.toLowerCase())||o.aparelho.toLowerCase().includes(busca.toLowerCase())||(o.numero||"").includes(busca)));
 
-  const nova = () => { setForm({ numero:"OS-"+String(lista.length+1).padStart(4,"0"), cliente:"", telefone:"", aparelho:"", defeito:"", tecnico:cfg.tecnico||"", status:"aberta", valor:"", pagamento:"Pix", data:today(), garantia:"90 dias", obs:"" }); setModal("novo"); };
+  const nova = () => {
+    setPrevStatus(null);
+    setForm({ numero:"OS-"+String(lista.length+1).padStart(4,"0"), cliente:"", telefone:"", aparelho:"", defeito:"", tecnico:cfg.tecnico||"", status:"aberta", valor:"", pagamento:"Pix", data:today(), garantia:"90 dias", obs:"" });
+    setModal("novo");
+  };
+
+  const lancarFinanceiro = async (f) => {
+    await db.insert("financeiro", {
+      user_id: user.id,
+      tipo: "receita",
+      categoria: "Serviço",
+      descricao: `Serviço ${f.numero} — ${f.cliente}`,
+      valor: Number(f.valor) || 0,
+      pagamento: f.pagamento,
+      data: f.data,
+    });
+  };
+
   const salvar = async () => {
     if(!form.cliente||!form.aparelho)return;
     const payload = { ...form, valor: Number(form.valor)||0, user_id: user.id };
@@ -367,14 +384,14 @@ function ModuloOS({ cfg }) {
     if(modal==="novo") {
       const novo = await db.insert("ordens_servico", payload);
       setLista(p=>[novo, ...p]);
+      if(form.status === "concluida") await lancarFinanceiro(form);
     } else {
       const updated = await db.update("ordens_servico", form.id, payload);
       setLista(p=>p.map(o=>o.id===form.id ? updated : o));
+      if(form.status === "concluida" && prevStatus !== "concluida") await lancarFinanceiro(form);
     }
     setModal(null);
   };
-
-  // F global definido fora do componente
 
   const counts = k => lista.filter(o=>o.status===k).length;
 
@@ -413,7 +430,7 @@ function ModuloOS({ cfg }) {
                   <td><StatusTag status={os.status}/></td>
                   <td style={{fontWeight:700,color:"#4ade80"}}>{fmt(os.valor)}</td>
                   <td><div style={{display:"flex",gap:4}}>
-                    <button className="btn-i" onClick={()=>{setForm({...os});setModal("editar");}}>✏️</button>
+                    <button className="btn-i" onClick={()=>{setPrevStatus(os.status);setForm({...os});setModal("editar");}}>✏️</button>
                     <button className="btn-i" onClick={()=>gerarPDF(os,cfg)} title="Imprimir OS">🖨️</button>
                     <button className="btn-d" onClick={async()=>{await db.delete("ordens_servico",os.id);setLista(p=>p.filter(o=>o.id!==os.id));}}>✕</button>
                   </div></td>
@@ -701,7 +718,6 @@ function ModuloConfig({ cfg, setCfg }) {
   const [form, setForm] = useState(cfg);
   const [saved, setSaved] = useState(false);
   const salvar = () => { setCfg(form); setSaved(true); setTimeout(()=>setSaved(false),2000); };
-  // F global definido fora do componente
   return (
     <div className="page">
       <div className="page-hdr"><div className="page-title">Configurações da Empresa</div><button className="btn-p" onClick={salvar}>{saved?"✓ Salvo!":"Salvar Configurações"}</button></div>
@@ -762,6 +778,326 @@ function Dashboard() {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── MÓDULO AGENDA (KANBAN) ────────────────────────────────────────
+const KANBAN_COLS = [
+  { key: "aberta",       label: "Aberta",        color: "#1A6BFF" },
+  { key: "em_andamento", label: "Em Andamento",  color: "#d97706" },
+  { key: "concluida",    label: "Concluída",      color: "#16a34a" },
+  { key: "cancelada",    label: "Cancelada",      color: "#dc2626" },
+];
+
+function ModuloAgenda() {
+  const { user } = useAuth();
+  const [lista, setLista] = useState([]);
+  const [dragId, setDragId] = useState(null);
+  const [dragOver, setDragOver] = useState(null);
+
+  useEffect(() => {
+    if (!user) return;
+    db.list("ordens_servico", user.id).then(data => {
+      setLista(Array.isArray(data) ? data : []);
+    });
+  }, [user]);
+
+  const handleDrop = async (colKey) => {
+    if (!dragId) return;
+    const os = lista.find(o => o.id === dragId);
+    if (!os || os.status === colKey) { setDragId(null); setDragOver(null); return; }
+    await db.update("ordens_servico", dragId, { status: colKey });
+    setLista(p => p.map(o => o.id === dragId ? { ...o, status: colKey } : o));
+    setDragId(null);
+    setDragOver(null);
+  };
+
+  return (
+    <div className="page">
+      <div className="page-hdr"><div className="page-title">Agenda Kanban</div></div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,alignItems:"start"}}>
+        {KANBAN_COLS.map(col => {
+          const cards = lista.filter(o => o.status === col.key);
+          return (
+            <div key={col.key}
+              className={`kanban-col${dragOver===col.key?" drag-over":""}`}
+              onDragOver={e=>{e.preventDefault();setDragOver(col.key);}}
+              onDragLeave={()=>setDragOver(null)}
+              onDrop={()=>handleDrop(col.key)}>
+              <div style={{background:col.color+"22",borderBottom:`2px solid ${col.color}`,padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <span style={{fontWeight:800,fontSize:13,color:col.color}}>{col.label}</span>
+                <span style={{background:col.color+"33",color:col.color,borderRadius:999,padding:"2px 8px",fontSize:12,fontWeight:700}}>{cards.length}</span>
+              </div>
+              <div style={{padding:10,display:"flex",flexDirection:"column",gap:8,flex:1}}>
+                {cards.map(os=>(
+                  <div key={os.id}
+                    className={`kanban-card${dragId===os.id?" dragging":""}`}
+                    draggable
+                    onDragStart={()=>setDragId(os.id)}
+                    onDragEnd={()=>{setDragId(null);setDragOver(null);}}>
+                    <div style={{color:"#1A6BFF",fontWeight:800,fontSize:11,marginBottom:3}}>{os.numero}</div>
+                    <div style={{fontWeight:700,fontSize:13,marginBottom:2}}>{os.cliente}</div>
+                    <div style={{color:"#94a3b8",fontSize:12,marginBottom:4}}>{os.aparelho}</div>
+                    <div style={{color:"#4ade80",fontWeight:700,fontSize:12}}>{fmt(os.valor)}</div>
+                  </div>
+                ))}
+                {cards.length===0&&(
+                  <div style={{textAlign:"center",color:"#94a3b8",fontSize:12,padding:20,flex:1,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                    Nenhuma OS
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── MÓDULO PRODUTOS / CAIXA ───────────────────────────────────────
+function ModuloProdutos() {
+  const { user } = useAuth();
+  const [produtos, setProdutos] = useState([]);
+  const [vendas, setVendas] = useState([]);
+  const [osAbertas, setOsAbertas] = useState([]);
+  const [busca, setBusca] = useState("");
+  const [modal, setModal] = useState(null);
+  const [formProd, setFormProd] = useState({});
+  const [buscaProd, setBuscaProd] = useState("");
+  const [prodSelecionado, setProdSelecionado] = useState(null);
+  const [formVenda, setFormVenda] = useState({ cliente:"", os_numero:"", quantidade:1, preco_unit:"", desconto:0, pagamento:"Pix", data:today(), observacoes:"" });
+
+  useEffect(() => {
+    if (!user) return;
+    Promise.all([
+      db.list("produtos", user.id),
+      db.list("vendas", user.id),
+      db.list("ordens_servico", user.id),
+    ]).then(([p, v, os]) => {
+      setProdutos(Array.isArray(p) ? p : []);
+      setVendas(Array.isArray(v) ? v : []);
+      setOsAbertas(Array.isArray(os) ? os.filter(o=>o.status==="aberta"||o.status==="em_andamento") : []);
+    });
+  }, [user]);
+
+  const totalVenda = Math.max(0, ((Number(formVenda.quantidade)||1) * (Number(formVenda.preco_unit)||0)) - (Number(formVenda.desconto)||0));
+  const prodsFiltrados = buscaProd && !prodSelecionado ? produtos.filter(p=>p.nome.toLowerCase().includes(buscaProd.toLowerCase())) : [];
+  const filteredProdutos = produtos.filter(p=>!busca||p.nome.toLowerCase().includes(busca.toLowerCase())||(p.categoria||"").toLowerCase().includes(busca.toLowerCase()));
+
+  const ajustarEstoque = async (prod, delta) => {
+    const novoEstoque = Math.max(0, prod.estoque + delta);
+    await db.update("produtos", prod.id, { estoque: novoEstoque });
+    setProdutos(p=>p.map(x=>x.id===prod.id?{...x,estoque:novoEstoque}:x));
+  };
+
+  const salvarProduto = async () => {
+    if(!formProd.nome)return;
+    const payload = { nome:formProd.nome, categoria:formProd.categoria||"Peça", custo:Number(formProd.custo)||0, venda:Number(formProd.venda)||0, estoque:Number(formProd.estoque)||0, user_id:user.id };
+    if(modal==="novo_prod") {
+      const novo = await db.insert("produtos", payload);
+      setProdutos(p=>[novo,...p]);
+    } else {
+      const updated = await db.update("produtos", formProd.id, payload);
+      setProdutos(p=>p.map(x=>x.id===formProd.id?updated:x));
+    }
+    setModal(null);
+  };
+
+  const registrarVenda = async () => {
+    if(!prodSelecionado||!formVenda.quantidade||!formVenda.preco_unit)return;
+    const vendaPayload = {
+      user_id: user.id,
+      produto_id: prodSelecionado.id,
+      produto_nome: prodSelecionado.nome,
+      cliente: formVenda.cliente,
+      os_numero: formVenda.os_numero,
+      quantidade: Number(formVenda.quantidade),
+      preco_unit: Number(formVenda.preco_unit),
+      desconto: Number(formVenda.desconto)||0,
+      total: totalVenda,
+      pagamento: formVenda.pagamento,
+      observacoes: formVenda.observacoes,
+      data: formVenda.data,
+    };
+    const novaVenda = await db.insert("vendas", vendaPayload);
+    setVendas(p=>[novaVenda,...p]);
+
+    await db.insert("financeiro", {
+      user_id: user.id,
+      tipo: "receita",
+      categoria: "Venda",
+      descricao: `Venda: ${prodSelecionado.nome} — ${formVenda.cliente||"Cliente"}`,
+      valor: totalVenda,
+      pagamento: formVenda.pagamento,
+      data: formVenda.data,
+    });
+
+    const novoEstoque = Math.max(0, prodSelecionado.estoque - Number(formVenda.quantidade));
+    await db.update("produtos", prodSelecionado.id, { estoque: novoEstoque });
+    setProdutos(p=>p.map(x=>x.id===prodSelecionado.id?{...x,estoque:novoEstoque}:x));
+
+    setBuscaProd(""); setProdSelecionado(null);
+    setFormVenda({ cliente:"", os_numero:"", quantidade:1, preco_unit:"", desconto:0, pagamento:"Pix", data:today(), observacoes:"" });
+  };
+
+  return (
+    <div className="page">
+      <div className="page-hdr"><div className="page-title">Produtos & Caixa</div></div>
+
+      {/* Duas colunas no topo */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:18}}>
+
+        {/* Esquerda: Estoque */}
+        <div className="card" style={{overflow:"hidden"}}>
+          <div style={{padding:"13px 16px",borderBottom:"1px solid #1e2738",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <span style={{fontWeight:800,fontSize:13}}>Estoque de Produtos</span>
+            <button className="btn-p" style={{padding:"5px 12px",fontSize:12}} onClick={()=>{setFormProd({nome:"",categoria:"Peça",custo:"",venda:"",estoque:""});setModal("novo_prod");}}>+ Produto</button>
+          </div>
+          <div style={{padding:"10px 14px 0"}}>
+            <div className="sbar"><input placeholder="Buscar produto…" value={busca} onChange={e=>setBusca(e.target.value)}/></div>
+          </div>
+          <div style={{overflowX:"auto"}}>
+            <table>
+              <thead><tr><th>Nome</th><th>Cat.</th><th>Custo</th><th>Venda</th><th>Estoque</th><th></th></tr></thead>
+              <tbody>
+                {filteredProdutos.map(p=>(
+                  <tr key={p.id}>
+                    <td style={{fontWeight:700}}>{p.nome}</td>
+                    <td><span style={{background:"#1a2236",color:"#1A6BFF",borderRadius:999,padding:"2px 8px",fontSize:11,fontWeight:700}}>{p.categoria}</span></td>
+                    <td style={{color:"#94a3b8"}}>{fmt(p.custo)}</td>
+                    <td style={{color:"#4ade80",fontWeight:700}}>{fmt(p.venda)}</td>
+                    <td>
+                      <div style={{display:"flex",alignItems:"center",gap:6}}>
+                        <button className="btn-i" style={{padding:"2px 8px",fontSize:14,lineHeight:1}} onClick={()=>ajustarEstoque(p,-1)}>−</button>
+                        <span style={{fontWeight:800,minWidth:24,textAlign:"center",color:p.estoque===0?"#f87171":p.estoque<=2?"#d97706":"#e2e8f0"}}>{p.estoque}</span>
+                        <button className="btn-i" style={{padding:"2px 8px",fontSize:14,lineHeight:1}} onClick={()=>ajustarEstoque(p,1)}>+</button>
+                      </div>
+                    </td>
+                    <td><div style={{display:"flex",gap:4}}>
+                      <button className="btn-i" onClick={()=>{setFormProd({...p});setModal("editar_prod");}}>✏️</button>
+                      <button className="btn-d" onClick={async()=>{await db.delete("produtos",p.id);setProdutos(x=>x.filter(i=>i.id!==p.id));}}>✕</button>
+                    </div></td>
+                  </tr>
+                ))}
+                {filteredProdutos.length===0&&<tr><td colSpan={6} style={{textAlign:"center",padding:20,color:"#94a3b8"}}>Nenhum produto cadastrado</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Direita: Registrar Venda */}
+        <div className="card" style={{padding:18}}>
+          <div style={{fontWeight:800,fontSize:13,marginBottom:14,borderBottom:"1px solid #1e2738",paddingBottom:10}}>Registrar Venda</div>
+
+          <div className="field"><label>Produto</label>
+            <div style={{position:"relative"}}>
+              <input
+                placeholder="Digite para buscar produto…"
+                value={prodSelecionado ? prodSelecionado.nome : buscaProd}
+                onChange={e=>{setBuscaProd(e.target.value);setProdSelecionado(null);setFormVenda(p=>({...p,preco_unit:""}));}}
+              />
+              {prodsFiltrados.length>0&&(
+                <div style={{position:"absolute",top:"calc(100% + 2px)",left:0,right:0,background:"#1a2236",border:"1px solid #2d3748",borderRadius:8,zIndex:50,maxHeight:180,overflowY:"auto",boxShadow:"0 8px 24px #00000066"}}>
+                  {prodsFiltrados.map(p=>(
+                    <div key={p.id}
+                      style={{padding:"9px 12px",cursor:"pointer",fontSize:13,borderBottom:"1px solid #2d3748",transition:"background 0.1s"}}
+                      onMouseDown={()=>{setProdSelecionado(p);setBuscaProd("");setFormVenda(f=>({...f,preco_unit:p.venda}));}}>
+                      <span style={{fontWeight:700}}>{p.nome}</span>
+                      <span style={{color:"#94a3b8",fontSize:12,marginLeft:8}}>{fmt(p.venda)} · {p.estoque} un.</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="frow frow-2">
+            <div className="field"><label>Cliente</label><input value={formVenda.cliente} onChange={e=>setFormVenda(p=>({...p,cliente:e.target.value}))} placeholder="Nome do cliente"/></div>
+            <div className="field"><label>Vincular OS</label>
+              <select value={formVenda.os_numero} onChange={e=>setFormVenda(p=>({...p,os_numero:e.target.value}))}>
+                <option value="">— Nenhuma —</option>
+                {osAbertas.map(o=><option key={o.id} value={o.numero}>{o.numero} · {o.cliente}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="frow frow-3">
+            <div className="field"><label>Qtd</label><input type="number" min="1" value={formVenda.quantidade} onChange={e=>setFormVenda(p=>({...p,quantidade:e.target.value}))}/></div>
+            <div className="field"><label>Preço Unit (R$)</label><input type="number" value={formVenda.preco_unit} onChange={e=>setFormVenda(p=>({...p,preco_unit:e.target.value}))}/></div>
+            <div className="field"><label>Desconto (R$)</label><input type="number" value={formVenda.desconto} onChange={e=>setFormVenda(p=>({...p,desconto:e.target.value}))}/></div>
+          </div>
+
+          <div style={{background:"#1a2236",border:"1px solid #2d3748",borderRadius:8,padding:"10px 16px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <span style={{color:"#94a3b8",fontSize:11,fontWeight:700,letterSpacing:"0.06em"}}>TOTAL</span>
+            <span style={{fontSize:22,fontWeight:800,color:"#4ade80"}}>{fmt(totalVenda)}</span>
+          </div>
+
+          <div className="frow frow-2">
+            <div className="field"><label>Pagamento</label>
+              <select value={formVenda.pagamento} onChange={e=>setFormVenda(p=>({...p,pagamento:e.target.value}))}>
+                {["Pix","Dinheiro","Cartão Débito","Cartão Crédito"].map(v=><option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
+            <div className="field"><label>Data</label><input type="date" value={formVenda.data} onChange={e=>setFormVenda(p=>({...p,data:e.target.value}))}/></div>
+          </div>
+
+          <div className="field"><label>Observações</label><textarea rows={2} value={formVenda.observacoes} onChange={e=>setFormVenda(p=>({...p,observacoes:e.target.value}))} placeholder="(opcional)"/></div>
+
+          <button className="btn-p" style={{width:"100%",justifyContent:"center",padding:"11px"}} onClick={registrarVenda}>
+            Registrar Venda
+          </button>
+        </div>
+      </div>
+
+      {/* Histórico de Vendas */}
+      <div className="card" style={{overflow:"hidden"}}>
+        <div style={{padding:"13px 16px",borderBottom:"1px solid #1e2738",fontWeight:800,fontSize:13}}>Histórico de Vendas</div>
+        <div style={{overflowX:"auto"}}>
+          <table>
+            <thead><tr><th>Data</th><th>Produto</th><th>Cliente</th><th>OS</th><th>Qtd</th><th>Unit</th><th>Desc.</th><th>Total</th><th>Pgto</th><th></th></tr></thead>
+            <tbody>
+              {vendas.map(v=>(
+                <tr key={v.id}>
+                  <td style={{color:"#94a3b8"}}>{v.data}</td>
+                  <td style={{fontWeight:700}}>{v.produto_nome}</td>
+                  <td>{v.cliente||"—"}</td>
+                  <td><span className="os-num">{v.os_numero||"—"}</span></td>
+                  <td style={{textAlign:"center"}}>{v.quantidade}</td>
+                  <td style={{color:"#94a3b8"}}>{fmt(v.preco_unit)}</td>
+                  <td style={{color:"#f87171"}}>{Number(v.desconto)>0?`− ${fmt(v.desconto)}`:"—"}</td>
+                  <td style={{fontWeight:700,color:"#4ade80"}}>{fmt(v.total)}</td>
+                  <td style={{color:"#94a3b8"}}>{v.pagamento}</td>
+                  <td><button className="btn-d" onClick={async()=>{await db.delete("vendas",v.id);setVendas(p=>p.filter(x=>x.id!==v.id));}}>✕</button></td>
+                </tr>
+              ))}
+              {vendas.length===0&&<tr><td colSpan={10} style={{textAlign:"center",padding:24,color:"#94a3b8"}}>Nenhuma venda registrada</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Modal Produto */}
+      {modal&&(
+        <Modal onClose={()=>setModal(null)}>
+          <div className="modal-hdr"><h2>{modal==="novo_prod"?"Novo Produto":"Editar Produto"}</h2><button className="btn-s" style={{padding:"5px 10px"}} onClick={()=>setModal(null)}>✕</button></div>
+          <div className="modal-body">
+            <div className="field"><label>Nome *</label><input value={formProd.nome||""} onChange={e=>setFormProd(p=>({...p,nome:e.target.value}))}/></div>
+            <div className="field"><label>Categoria</label>
+              <select value={formProd.categoria||"Peça"} onChange={e=>setFormProd(p=>({...p,categoria:e.target.value}))}>
+                {["Peça","Smartphone","Seminovo","Acessório","Outro"].map(c=><option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="frow frow-3">
+              <div className="field"><label>Custo (R$)</label><input type="number" value={formProd.custo||""} onChange={e=>setFormProd(p=>({...p,custo:e.target.value}))}/></div>
+              <div className="field"><label>Venda (R$)</label><input type="number" value={formProd.venda||""} onChange={e=>setFormProd(p=>({...p,venda:e.target.value}))}/></div>
+              <div className="field"><label>Estoque inicial</label><input type="number" value={formProd.estoque||""} onChange={e=>setFormProd(p=>({...p,estoque:e.target.value}))}/></div>
+            </div>
+          </div>
+          <div className="modal-ftr"><button className="btn-s" onClick={()=>setModal(null)}>Cancelar</button><button className="btn-p" onClick={salvarProduto}>Salvar</button></div>
+        </Modal>
+      )}
     </div>
   );
 }
@@ -886,12 +1222,14 @@ function Paywall({ onSignOut, onRefresh }) {
 
 // ── APP MAIN ──────────────────────────────────────────────────────
 const MENU = [
-  {key:"dashboard",label:"Dashboard",icon:"📊"},
-  {key:"os",label:"O.S.",icon:"🔧"},
-  {key:"clientes",label:"Clientes",icon:"👥"},
+  {key:"dashboard", label:"Dashboard", icon:"📊"},
+  {key:"os",        label:"O.S.",      icon:"🔧"},
+  {key:"agenda",    label:"Agenda",    icon:"📅"},
+  {key:"clientes",  label:"Clientes",  icon:"👥"},
   {key:"financeiro",label:"Financeiro",icon:"💰"},
-  {key:"catalogo",label:"Catálogo",icon:"📦"},
-  {key:"config",label:"Config",icon:"⚙️"},
+  {key:"catalogo",  label:"Catálogo",  icon:"📦"},
+  {key:"produtos",  label:"Produtos",  icon:"🛍️"},
+  {key:"config",    label:"Config",    icon:"⚙️"},
 ];
 
 function AppMain({ accessStatus }) {
@@ -925,9 +1263,11 @@ function AppMain({ accessStatus }) {
       )}
       {page==="dashboard"  && <Dashboard/>}
       {page==="os"         && <ModuloOS cfg={cfg}/>}
+      {page==="agenda"     && <ModuloAgenda/>}
       {page==="clientes"   && <ModuloClientes/>}
       {page==="financeiro" && <ModuloFinanceiro/>}
       {page==="catalogo"   && <ModuloCatalogo/>}
+      {page==="produtos"   && <ModuloProdutos/>}
       {page==="config"     && <ModuloConfig cfg={cfg} setCfg={setCfg}/>}
     </>
   );
