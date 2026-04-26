@@ -1182,7 +1182,7 @@ function Register({ onSwitch }) {
     <div className="auth-wrap"><div className="auth-card">
       <div className="auth-logo"><div className="auth-logo-t">Core<span>Ops</span></div></div>
       <div style={{fontSize:20,fontWeight:800,marginBottom:3}}>Criar conta grátis</div>
-      <div className="auth-ok" style={{fontSize:12}}>✅ 3 dias grátis · Sem cartão · R$37/mês depois</div>
+      <div className="auth-ok" style={{fontSize:12}}>✅ 3 dias grátis · Sem cartão · R$17/mês depois</div>
       {erro&&<div className="auth-err">{erro}</div>}
       <div className="field"><label>Nome da Assistência</label><input placeholder="Ex: TechFix Vacaria" value={nome} onChange={e=>setNome(e.target.value)}/></div>
       <div className="field"><label>E-mail</label><input type="email" placeholder="voce@email.com" value={email} onChange={e=>setEmail(e.target.value)}/></div>
@@ -1235,7 +1235,7 @@ function Paywall({ onSignOut, onRefresh }) {
         <div style={{background:"#1a2236",border:"1px solid #2d3748",borderRadius:10,padding:"14px 18px",marginBottom:18,textAlign:"left"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
             <div><div style={{fontWeight:800,fontSize:14}}>Plano CoreOps</div><div style={{color:"#94a3b8",fontSize:12}}>Cancele quando quiser</div></div>
-            <div style={{textAlign:"right"}}><div style={{fontSize:24,fontWeight:800,color:"#4ade80"}}>R$37</div><div style={{color:"#94a3b8",fontSize:11}}>/mês</div></div>
+            <div style={{textAlign:"right"}}><div style={{fontSize:24,fontWeight:800,color:"#4ade80"}}>R$17</div><div style={{color:"#94a3b8",fontSize:11}}>/mês</div></div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
             {["OS ilimitadas","Controle de caixa","Catálogo de peças","Suporte WhatsApp"].map(i=>(
@@ -1243,7 +1243,7 @@ function Paywall({ onSignOut, onRefresh }) {
             ))}
           </div>
         </div>
-        <button className="btn-g" onClick={()=>window.open(`${CAKTO_LINK}?email=${encodeURIComponent(user.email)}`,"_blank")} style={{marginBottom:8}}>Assinar agora por R$37/mês →</button>
+        <button className="btn-g" onClick={()=>window.open(`${CAKTO_LINK}?email=${encodeURIComponent(user.email)}`,"_blank")} style={{marginBottom:8}}>Assinar agora por R$17/mês →</button>
         <button className="btn-gh" onClick={async()=>{setChecking(true);await onRefresh();setTimeout(()=>setChecking(false),1500);}} disabled={checking}>
           {checking?"Verificando…":"Já paguei — verificar acesso"}
         </button>
@@ -1291,7 +1291,7 @@ function AppMain({ accessStatus }) {
           <span style={{fontSize:13,fontWeight:700,color:accessStatus.diasRestantes<=2?"#f87171":"#fbbf24"}}>
             {accessStatus.diasRestantes<=2?"⚠️":"⏳"} {accessStatus.diasRestantes} {accessStatus.diasRestantes===1?"dia":"dias"} restantes no trial.
           </span>
-          <a href={CAKTO_LINK} target="_blank" rel="noreferrer" style={{background:"#16a34a",color:"#fff",borderRadius:8,padding:"6px 14px",fontSize:13,fontWeight:700,textDecoration:"none"}}>Assinar R$37/mês</a>
+          <a href={CAKTO_LINK} target="_blank" rel="noreferrer" style={{background:"#16a34a",color:"#fff",borderRadius:8,padding:"6px 14px",fontSize:13,fontWeight:700,textDecoration:"none"}}>Assinar R$17/mês</a>
         </div>
       )}
       {page==="dashboard"  && <Dashboard/>}
